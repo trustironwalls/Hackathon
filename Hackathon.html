@@ -1,0 +1,2874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DEEBUG CTF</title>
+<!-- FLAG{v13w_s0urc3_f1rst_alw4ys} hidden in source — flag #1 -->
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── DESIGN TOKENS ───────────────────────────── */
+:root{
+  --ink:    #07111f;   /* deep navy base */
+  --ink2:   #0e1b34;
+  --ink3:   #142541;
+  --ink4:   #1c2e4f;
+  --wire:   #27334d;
+  --wire2:  #3f5a80;
+  --dim:    #8ca8c9;
+  --body:   #d8e4f6;
+  --pale:   #edf4ff;
+  --white:  #eef6ff;
+  --orange: #4b9bff;   /* professional blue accent */
+  --orange2:#83b9ff;
+  --orange3:rgba(75,155,255,.12);
+  --teal:   #29c4a8;
+  --teal2:  rgba(41,196,168,.12);
+  --red:    #f16a60;
+  --yellow: #f5c54e;
+  --green:  #3db38f;
+  --font:   'Courier Prime', monospace;
+  --ui:     'Inter', sans-serif;
+  --display:'Bebas Neue', sans-serif;
+  --r:      4px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--ink);color:var(--body);font-family:var(--font);overflow:hidden}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--wire2);border-radius:2px}
+
+/* ── PAGES ───────────────────────────────────── */
+.page{display:none;width:100%;height:100%;position:absolute;inset:0}
+.page.active{display:flex;flex-direction:column}
+
+/* ════════════════════════════════════════════
+   LOGIN PAGE
+═══════════════════════════════════════════════ */
+#page-login{
+  background:var(--ink);
+  align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+}
+/* Grid background */
+#page-login::before{
+  content:'';position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(75,155,255,.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(75,155,255,.05) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+/* Vignette */
+#page-login::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 70% 70% at 50% 50%,transparent 40%,var(--ink) 100%);
+  pointer-events:none;
+}
+.login-wrap{
+  position:relative;z-index:10;
+  width:430px;
+}
+/* Brand stamp */
+.classified-stamp{
+  font-family:var(--display);font-size:3.5rem;
+  color:var(--orange);letter-spacing:.24em;
+  border:4px solid var(--orange);
+  padding:4px 18px;display:inline-block;
+  transform:rotate(-4deg);margin-bottom:28px;
+  position:relative;opacity:.95;
+  text-shadow:1px 0 0 rgba(75,155,255,.25);}
+@keyframes glitch{
+  0%,92%,100%{transform:rotate(-8deg) skew(0);filter:none}
+  93%{transform:rotate(-8deg) skew(2deg);filter:hue-rotate(20deg)}
+  94%{transform:rotate(-8deg) skew(-1deg) translate(2px,0);filter:hue-rotate(-20deg)}
+  95%{transform:rotate(-8deg) skew(0)}
+  97%{transform:rotate(-8deg) translate(-2px,1px)}
+  98%{transform:rotate(-8deg) translate(0)}
+}
+.login-box{
+  background:var(--ink2);
+  border:1px solid var(--wire2);
+  border-top:2px solid var(--orange);
+  padding:36px 32px;
+}
+.login-eyebrow{
+  font-family:var(--ui);font-size:.65rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.2em;
+  color:var(--dim);margin-bottom:6px;
+}
+.login-title{
+  font-family:var(--display);font-size:2.2rem;
+  color:var(--white);letter-spacing:.06em;margin-bottom:4px;
+}
+.login-sub{
+  font-size:.78rem;color:var(--dim);margin-bottom:28px;
+  font-family:var(--ui);
+}
+.field{margin-bottom:16px}
+.field label{
+  display:block;font-family:var(--ui);font-size:.65rem;
+  font-weight:700;text-transform:uppercase;letter-spacing:.12em;
+  color:var(--dim);margin-bottom:6px;
+}
+.field input{
+  width:100%;background:var(--ink3);
+  border:1px solid var(--wire);border-radius:var(--r);
+  color:var(--white);font-family:var(--font);font-size:.9rem;
+  padding:10px 14px;outline:none;transition:border-color .2s;
+}
+.field input:focus{border-color:var(--orange)}
+.field input::placeholder{color:var(--wire2)}
+#login-err{
+  font-family:var(--ui);font-size:.75rem;color:var(--red);
+  margin-bottom:14px;min-height:18px;
+}
+.btn-primary{
+  width:100%;background:var(--orange);color:#fff;
+  font-family:var(--ui);font-size:.82rem;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;
+  padding:11px;border:none;border-radius:var(--r);
+  cursor:pointer;transition:background .15s;
+}
+.btn-primary:hover{background:var(--orange2)}
+.login-footer{
+  margin-top:20px;font-family:var(--ui);font-size:.7rem;
+  color:var(--dim);text-align:center;line-height:1.8;
+}
+/* Scroll of text in background */
+.matrix-col{
+  position:absolute;top:0;font-family:var(--font);font-size:.7rem;
+  color:rgba(232,98,42,.07);white-space:pre;line-height:1.4;
+  animation:fall linear infinite;pointer-events:none;z-index:1;
+}
+@keyframes fall{from{transform:translateY(-100%)}to{transform:translateY(100vh)}}
+
+/* ════════════════════════════════════════════
+   SHARED NAV
+═══════════════════════════════════════════════ */
+#topnav{
+  background:rgba(7,18,34,.96);
+  border-bottom:1px solid rgba(75,155,255,.16);
+  height:56px;display:flex;align-items:center;
+  padding:0 28px;gap:0;flex-shrink:0;z-index:100;
+  position:relative;
+}
+/* Subtle orange line under nav */
+#topnav::after{
+  content:'';position:absolute;bottom:0;left:0;
+  width:var(--active-w,0px);height:2px;
+  background:var(--orange);
+  transition:all .25s ease;
+}
+.nav-logo{
+  font-family:var(--display);font-size:1.4rem;
+  color:var(--orange);letter-spacing:.06em;margin-right:28px;
+  cursor:pointer;
+}
+.nav-logo span{color:var(--body);font-size:.9rem}
+.navlink{
+  font-family:var(--ui);font-size:.75rem;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  color:var(--dim);padding:0 14px;height:50px;
+  display:flex;align-items:center;cursor:pointer;
+  border-bottom:2px solid transparent;transition:all .15s;
+  position:relative;
+}
+.navlink:hover{color:var(--pale)}
+.navlink.active{color:var(--orange);border-bottom-color:var(--orange)}
+.nav-spacer{flex:1}
+.nav-user{
+  display:flex;align-items:center;gap:10px;
+  font-family:var(--ui);font-size:.75rem;color:var(--dim);
+}
+.nav-avatar{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--ink4);border:1px solid var(--wire2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--display);font-size:.9rem;color:var(--orange);
+}
+.nav-score-badge{
+  background:var(--orange3);border:1px solid var(--orange);
+  border-radius:var(--r);padding:2px 8px;
+  font-family:var(--font);font-size:.72rem;color:var(--orange);
+}
+.nav-btn{
+  font-family:var(--ui);font-size:.7rem;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  padding:5px 12px;border-radius:var(--r);border:none;
+  cursor:pointer;transition:all .15s;
+}
+.nav-btn-ghost{background:transparent;color:var(--dim);border:1px solid var(--wire)}
+.nav-btn-ghost:hover{color:var(--pale);border-color:var(--wire2)}
+
+/* ════════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════════ */
+#page-dash{background:var(--ink)}
+#dash-body{flex:1;overflow-y:auto;padding:32px 40px;max-width:1200px;margin:0 auto}
+
+.dashboard-hero{
+  background:rgba(75,155,255,.07);border:1px solid rgba(75,155,255,.18);
+  border-radius:var(--r);padding:24px 26px;margin-bottom:24px;
+}
+.dashboard-hero h1{
+  margin:0;font-family:var(--display);font-size:2.1rem;color:var(--white);
+}
+.dashboard-hero p{
+  margin:10px 0 0;font-family:var(--ui);font-size:.95rem;color:var(--dim);max-width:680px;line-height:1.6;
+}
+
+/* Stats row */
+.stats-row{display:grid;grid-template-columns:repeat(4,minmax(200px,1fr));gap:18px;margin-bottom:32px}
+.stat-card{
+  background:rgba(15,27,49,.95);border:1px solid rgba(75,155,255,.15);
+  padding:20px 24px;position:relative;overflow:hidden;border-radius:var(--r);
+  cursor:pointer;transition:transform .18s,box-shadow .18s,border-color .18s;
+}
+.stat-card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 14px 30px rgba(0,0,0,.18);
+  border-color:rgba(75,155,255,.4);
+}
+.stat-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--c,var(--orange));
+}
+.stat-label{font-family:var(--ui);font-size:.7rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.14em;color:var(--dim);margin-bottom:10px}
+.stat-value{font-family:var(--display);font-size:2.4rem;
+  color:var(--white);letter-spacing:.01em;line-height:1}
+.stat-sub{font-family:var(--ui);font-size:.78rem;color:var(--dim);margin-top:8px}
+
+/* Section header */
+.section-head{
+  display:flex;align-items:center;gap:14px;margin-bottom:18px;
+}
+.section-head h2{
+  font-family:var(--display);font-size:1.4rem;
+  color:var(--white);letter-spacing:.04em;
+}
+.section-head .sh-line{flex:1;height:1px;background:var(--wire)}
+.section-head .sh-count{
+  font-family:var(--font);font-size:.78rem;color:var(--dim);
+  white-space:nowrap;
+}
+
+/* Challenge grid */
+.chal-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:12px;margin-bottom:32px;
+}
+.chal-card{
+  background:var(--ink2);border:1px solid var(--wire);
+  padding:18px 20px;cursor:pointer;position:relative;
+  transition:border-color .15s,transform .1s;
+  overflow:hidden;
+}
+.chal-card::after{
+  content:'';position:absolute;inset:0;
+  background:var(--orange3);opacity:0;transition:opacity .15s;
+}
+.chal-card:hover{border-color:var(--wire2);transform:translateY(-1px)}
+.chal-card:hover::after{opacity:1}
+.chal-card.solved{border-left:3px solid var(--green)}
+.chal-card.solved::before{
+  content:'SOLVED';position:absolute;top:10px;right:12px;
+  font-family:var(--display);font-size:.7rem;letter-spacing:.12em;
+  color:var(--green);opacity:.6;
+}
+.chal-cat{
+  font-family:var(--ui);font-size:.6rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.14em;
+  color:var(--dim);margin-bottom:6px;
+}
+.chal-name{
+  font-family:var(--ui);font-size:.92rem;font-weight:600;
+  color:var(--white);margin-bottom:8px;line-height:1.3;
+}
+.chal-desc{font-size:.78rem;color:var(--body);line-height:1.6;margin-bottom:12px}
+.chal-footer{display:flex;align-items:center;gap:8px}
+.diff-pip{
+  width:7px;height:7px;border-radius:50%;flex-shrink:0;
+}
+.dp-easy{background:var(--green)}.dp-med{background:var(--yellow)}
+.dp-hard{background:var(--orange)}.dp-expert{background:var(--red)}
+.chal-diff{font-family:var(--ui);font-size:.65rem;color:var(--dim);flex:1}
+.chal-pts{
+  font-family:var(--font);font-size:.78rem;color:var(--orange);
+  background:var(--orange3);padding:2px 7px;border-radius:var(--r);
+}
+.chal-card.solved .chal-pts{color:var(--green);background:rgba(45,179,122,.1)}
+
+/* ════════════════════════════════════════════
+   TERMINAL LAB PAGE
+═══════════════════════════════════════════════ */
+#page-lab{background:var(--ink)}
+#lab-body{flex:1;display:flex;overflow:hidden}
+
+/* Sidebar */
+#lab-sidebar{
+  width:260px;flex-shrink:0;background:var(--ink2);
+  border-right:1px solid var(--wire);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+#lab-sidebar-header{
+  padding:14px 16px;border-bottom:1px solid var(--wire);
+  flex-shrink:0;
+}
+#lab-sidebar-header h3{
+  font-family:var(--ui);font-size:.7rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.12em;color:var(--dim);
+  margin-bottom:2px;
+}
+#active-chal-name{
+  font-family:var(--display);font-size:1.1rem;
+  color:var(--orange);letter-spacing:.04em;
+}
+#lab-flags-list{flex:1;overflow-y:auto}
+.lab-flag-item{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 14px;border-bottom:1px solid var(--wire);
+  font-size:.75rem;cursor:pointer;transition:background .1s;
+}
+.lab-flag-item:hover{background:var(--ink3)}
+.lab-flag-item.found{background:rgba(45,179,122,.05)}
+.lfi-num{font-family:var(--display);font-size:.85rem;color:var(--dim);width:20px;flex-shrink:0}
+.lfi-name{flex:1;color:var(--body);line-height:1.3}
+.lab-flag-item.found .lfi-name{color:var(--green)}
+.lfi-pts{font-family:var(--font);font-size:.68rem;color:var(--dim)}
+.lab-flag-item.found .lfi-pts{color:var(--green)}
+.lfi-dot{width:6px;height:6px;border-radius:50%;background:var(--wire2);flex-shrink:0}
+.lab-flag-item.found .lfi-dot{background:var(--green)}
+
+/* Submit row */
+#lab-submit{
+  padding:10px 14px;border-top:1px solid var(--wire);flex-shrink:0;
+  background:var(--ink3);
+}
+#lab-flag-input{
+  width:100%;background:var(--ink);border:1px solid var(--wire);
+  border-radius:var(--r);color:var(--teal);font-family:var(--font);
+  font-size:.8rem;padding:7px 10px;outline:none;transition:border-color .2s;
+  margin-bottom:6px;
+}
+#lab-flag-input:focus{border-color:var(--teal)}
+#lab-flag-input::placeholder{color:var(--wire2)}
+#lab-submit-row{display:flex;gap:6px}
+#lab-submit-btn{
+  flex:1;background:var(--teal);color:var(--ink);
+  font-family:var(--ui);font-size:.7rem;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;
+  padding:7px;border:none;border-radius:var(--r);cursor:pointer;
+}
+#lab-submit-btn:hover{background:#25d4c2}
+#lab-submit-msg{
+  font-family:var(--ui);font-size:.68rem;margin-top:4px;min-height:14px;
+}
+#lab-submit-msg.ok{color:var(--green)}
+#lab-submit-msg.err{color:var(--red)}
+#lab-submit-msg.dup{color:var(--yellow)}
+
+/* Terminal */
+#lab-terminal{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#term-topbar{
+  background:var(--ink3);border-bottom:1px solid var(--wire);
+  padding:7px 16px;display:flex;align-items:center;gap:8px;flex-shrink:0;
+}
+.tdot{width:10px;height:10px;border-radius:50%}
+.td-r{background:#ff5f57}.td-y{background:#ffbd2e}.td-g{background:#28ca41}
+#term-titlelabel{
+  font-family:var(--ui);font-size:.7rem;color:var(--dim);
+  flex:1;text-align:center;letter-spacing:.04em;
+}
+/* Hint bar */
+#term-hint-bar{
+  background:rgba(29,184,168,.06);border-bottom:1px solid rgba(29,184,168,.15);
+  padding:7px 16px;font-size:.75rem;color:var(--teal);flex-shrink:0;
+  display:none;font-family:var(--ui);
+}
+#term-output{
+  flex:1;overflow-y:auto;padding:12px 16px;
+  font-size:.83rem;line-height:1.75;white-space:pre-wrap;word-break:break-all;
+  background:#000;
+}
+#term-input-row{
+  display:flex;align-items:center;padding:8px 16px;
+  border-top:1px solid #1a1a1a;gap:6px;flex-shrink:0;background:#000;
+}
+#term-ps1{color:var(--orange);white-space:nowrap;font-size:.83rem;flex-shrink:0}
+#term-input{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--white);font-family:var(--font);font-size:.83rem;
+  caret-color:var(--orange);
+}
+
+/* ════════════════════════════════════════════
+   SCOREBOARD
+═══════════════════════════════════════════════ */
+#page-board{background:var(--ink)}
+#board-body{flex:1;overflow-y:auto;padding:28px 24px}
+.board-header-row{
+  display:grid;grid-template-columns:60px 1fr 120px 100px 80px 80px;
+  gap:12px;padding:8px 16px;
+  font-family:var(--ui);font-size:.62rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.12em;color:var(--dim);
+  border-bottom:1px solid var(--wire);margin-bottom:4px;
+}
+.board-row{
+  display:grid;grid-template-columns:60px 1fr 120px 100px 80px 80px;
+  gap:12px;padding:12px 16px;border-bottom:1px solid var(--wire);
+  align-items:center;transition:background .1s;cursor:pointer;
+}
+.board-row:hover{background:var(--ink2)}
+.board-row.me{background:var(--orange3);border-left:3px solid var(--orange)}
+.board-rank{
+  font-family:var(--display);font-size:1.5rem;
+  color:var(--dim);text-align:center;
+}
+.board-rank.r1{color:#d4a017}.board-rank.r2{color:#9aafc8}.board-rank.r3{color:#b87333}
+.board-name{display:flex;align-items:center;gap:10px}
+.board-avatar{
+  width:30px;height:30px;border-radius:50%;
+  background:var(--ink4);border:1px solid var(--wire2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--display);font-size:.9rem;color:var(--orange);
+  flex-shrink:0;
+}
+.board-username{font-family:var(--ui);font-size:.85rem;font-weight:600;color:var(--white)}
+.board-tag{font-family:var(--ui);font-size:.65rem;color:var(--dim);margin-top:1px}
+.board-score{
+  font-family:var(--display);font-size:1.3rem;
+  color:var(--orange);letter-spacing:.02em;
+}
+.board-row.me .board-score{color:var(--orange2)}
+.board-flags{font-family:var(--font);font-size:.8rem;color:var(--body)}
+.board-last{font-family:var(--font);font-size:.72rem;color:var(--dim)}
+.board-delta{
+  font-family:var(--ui);font-size:.7rem;font-weight:600;text-align:center;
+}
+.delta-up{color:var(--green)}.delta-dn{color:var(--red)}.delta-eq{color:var(--dim)}
+
+/* ── CHART ── */
+#score-chart-wrap{
+  background:var(--ink2);border:1px solid var(--wire);
+  padding:20px 24px;margin-bottom:24px;
+}
+#score-chart-wrap h3{
+  font-family:var(--display);font-size:1.1rem;color:var(--white);
+  letter-spacing:.06em;margin-bottom:16px;
+}
+#score-canvas{width:100%;height:120px;display:block}
+
+/* ════════════════════════════════════════════
+   ADMIN DASHBOARD
+═══════════════════════════════════════════════ */
+#page-admin{background:var(--ink)}
+#admin-body{flex:1;overflow-y:auto;padding:32px 40px;max-width:1400px;margin:0 auto}
+.admin-hero{
+  background:rgba(75,155,255,.07);border:1px solid rgba(75,155,255,.18);
+  border-radius:var(--r);padding:24px 26px;margin-bottom:24px;
+}
+.admin-hero h1{
+  margin:0;font-family:var(--display);font-size:2.1rem;color:var(--orange);letter-spacing:.04em;
+}
+.admin-hero p{
+  margin:8px 0 0;font-family:var(--ui);font-size:.92rem;color:var(--dim);line-height:1.5;
+}
+/* Admin stats */
+.admin-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px}
+.admin-stat-card{
+  background:rgba(15,27,49,.95);border:1px solid rgba(75,155,255,.14);
+  padding:16px 18px;border-radius:var(--r);
+}
+.admin-stat-card .stat-label{font-size:.65rem;margin-bottom:8px}
+.admin-stat-card .stat-value{font-size:1.8rem}
+.admin-stat-card .stat-sub{font-size:.72rem;margin-top:4px}
+/* Admin panels */
+.admin-panel{
+  background:rgba(15,27,49,.95);border:1px solid rgba(75,155,255,.14);
+  border-radius:var(--r);padding:20px;margin-bottom:20px;
+}
+.admin-panel h3{
+  margin:0 0 14px;font-family:var(--ui);font-size:.88rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.12em;color:var(--orange);
+}
+.admin-table{
+  width:100%;border-collapse:collapse;font-size:.82rem;
+}
+.admin-table th{
+  background:rgba(75,155,255,.06);padding:10px 12px;text-align:left;
+  font-family:var(--ui);font-weight:600;color:var(--orange);border-bottom:1px solid var(--wire);
+}
+.admin-table td{
+  padding:10px 12px;border-bottom:1px solid var(--wire2);color:var(--body);
+}
+.admin-table tr:hover{background:rgba(75,155,255,.03)}
+.admin-table .highlight{color:var(--white);font-weight:600}
+.admin-table .flag-found{color:var(--green)}
+.admin-table .flag-not{color:var(--dim)}
+.admin-btn{
+  font-family:var(--ui);font-size:.7rem;font-weight:600;padding:5px 10px;
+  border-radius:var(--r);border:1px solid var(--orange);background:transparent;
+  color:var(--orange);cursor:pointer;transition:all .15s;
+}
+.admin-btn:hover{background:rgba(75,155,255,.15)}
+/* Challenge status widget */
+.challenge-status-bar{
+  background:var(--ink3);height:8px;border-radius:2px;overflow:hidden;margin:8px 0;
+}
+.challenge-status-bar-fill{
+  background:var(--green);height:100%;transition:width .3s;
+}
+/* Flag heat map */
+.flag-heat{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:12px}
+.flag-heat-item{
+  background:var(--ink3);border:1px solid var(--wire);padding:8px 10px;border-radius:var(--r);
+  text-align:center;font-size:.75rem;cursor:pointer;transition:all .15s;
+}
+.flag-heat-item.found{
+  background:rgba(45,179,122,.15);border-color:var(--green);color:var(--green);
+}
+.flag-heat-item:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.2)}
+
+/* ════════════════════════════════════════════
+   MODAL
+═══════════════════════════════════════════════ */
+#modal{
+  display:none;position:fixed;inset:0;
+  background:rgba(7,9,15,.85);z-index:500;
+  align-items:center;justify-content:center;padding:20px;
+}
+#modal.open{display:flex}
+#mbox{
+  background:var(--ink2);border:1px solid var(--wire2);
+  border-top:2px solid var(--orange);
+  max-width:560px;width:100%;padding:28px;
+  animation:popIn .18s ease;
+}
+@keyframes popIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#mbox h2{
+  font-family:var(--display);font-size:1.4rem;
+  color:var(--white);letter-spacing:.06em;margin-bottom:4px;
+}
+.m-cat{
+  font-family:var(--ui);font-size:.62rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.14em;
+  color:var(--orange);margin-bottom:14px;
+}
+.m-desc{font-size:.82rem;color:var(--body);line-height:1.8;margin-bottom:16px}
+.m-hint-box{
+  background:var(--ink3);border-left:3px solid var(--teal);
+  padding:12px 16px;font-size:.8rem;color:var(--body);
+  line-height:1.7;margin-bottom:16px;
+}
+.m-hint-label{
+  font-family:var(--ui);font-size:.6rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.14em;
+  color:var(--teal);margin-bottom:6px;
+}
+.m-actions{display:flex;gap:8px;justify-content:flex-end}
+.mbtn{
+  font-family:var(--ui);font-size:.72rem;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  padding:7px 14px;border:none;border-radius:var(--r);cursor:pointer;
+}
+.mbtn-ghost{background:transparent;color:var(--dim);border:1px solid var(--wire)}
+.mbtn-ghost:hover{color:var(--pale);border-color:var(--wire2)}
+.mbtn-orange{background:var(--orange);color:#fff}
+.mbtn-orange:hover{background:var(--orange2)}
+
+/* ── TOAST ── */
+#toast{
+  display:none;position:fixed;bottom:20px;right:20px;z-index:600;
+  border-radius:var(--r);padding:12px 18px;
+  font-family:var(--ui);font-size:.8rem;font-weight:600;
+  border-left:3px solid var(--orange);
+  background:var(--ink2);color:var(--white);
+  box-shadow:0 4px 20px rgba(0,0,0,.5);
+  animation:tSlide .25s ease;
+}
+#toast.t-green{border-left-color:var(--green);color:var(--green)}
+#toast.t-red{border-left-color:var(--red);color:var(--red)}
+@keyframes tSlide{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+
+/* ── MISC ── */
+.tag{
+  display:inline-block;font-family:var(--ui);font-size:.6rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;
+  padding:2px 6px;border-radius:var(--r);
+}
+.tag-easy{background:rgba(45,179,122,.15);color:var(--green)}
+.tag-med{background:rgba(212,160,23,.15);color:var(--yellow)}
+.tag-hard{background:rgba(232,98,42,.15);color:var(--orange)}
+.tag-expert{background:rgba(224,53,53,.15);color:var(--red)}
+.redacted{
+  background:var(--dim);color:transparent;
+  user-select:none;border-radius:2px;
+  display:inline-block;
+}
+
+/* ── PROFILE PAGE ────────────────────────────── */
+#page-profile{background:var(--ink)}
+#profile-body{flex:1;overflow-y:auto;padding:32px 40px;max-width:1000px;margin:0 auto;width:100%;}
+.profile-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:20px;
+}
+.profile-card{
+  background:rgba(15,27,49,.95);border:1px solid rgba(75,155,255,.14);
+  border-radius:var(--r);padding:24px;position:relative;overflow:hidden;
+}
+.profile-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--orange);
+}
+.profile-card h3{
+  margin:0 0 16px;font-family:var(--ui);font-size:.88rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.12em;color:var(--orange);
+}
+.profile-field{
+  font-family:var(--ui);font-size:.85rem;color:var(--body);
+  border-bottom:1px solid var(--wire);padding:10px 0;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.profile-field strong{color:var(--white);font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN PAGE ═════════════════════════════ -->
+<div id="page-login" class="page active">
+  <!-- Matrix columns -->
+  <div id="matrix-bg"></div>
+
+  <div class="login-wrap">
+    <div style="text-align:center;margin-bottom:8px">
+      <div class="classified-stamp">CLASSIFIED</div>
+    </div>
+    <div class="login-box">
+      <div class="login-eyebrow">Trusted Iron Walls</div>
+      <div class="login-title">Deebug Institute CTF</div>
+      <div class="login-sub">Authenticate to access the challenge environment.</div>
+      <!-- FLAG hidden in a meta tag: view source to find it -->
+      <!-- page-flag: FLAG{v13w_s0urc3_f1rst_alw4ys} -->
+
+      <div id="login-err"></div>
+      <div class="field">
+        <label>Operator ID</label>
+        <input id="li-user" type="text" placeholder="username" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="field">
+        <label>Access Code</label>
+        <input id="li-pass" type="password" placeholder="password">
+      </div>
+      <button type="button" class="btn-primary" onclick="doLogin()">Login</button>
+      <div style="margin-top:14px;text-align:center;">
+        <button class="nav-btn nav-btn-ghost" type="button" onclick="toggleCreateAccount()">Create a new account</button>
+      </div>
+      <div id="create-account-panel" style="display:none;margin-top:18px;border:1px solid var(--wire);border-radius:var(--r);padding:14px;background:rgba(232,98,42,.05)">
+        <div class="field">
+          <label>New Operator ID</label>
+          <input id="new-user" type="text" placeholder="new username" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field">
+          <label>New Access Code</label>
+          <input id="new-pass" type="password" placeholder="new password">
+        </div>
+        <div class="field" style="display:flex;align-items:center;gap:8px;">
+          <input id="new-special" type="checkbox" checked>
+          <label for="new-special" style="margin:0;font-size:.78rem;color:var(--body);font-family:var(--ui);">Is on special</label>
+        </div>
+        <div id="create-account-msg" style="font-family:var(--ui);font-size:.75rem;min-height:18px;color:var(--green);"></div>
+        <button class="btn-primary" style="margin-top:8px" type="button" onclick="createAccount()">Create Account</button>
+      </div>
+      <div style="margin-top:12px;text-align:center;">
+        <button class="nav-btn nav-btn-ghost" type="button" onclick="toggleForgotPanel()">Forgot Access Code?</button>
+      </div>
+      <div id="forgot-panel" style="display:none;margin-top:18px;border:1px solid var(--wire);border-radius:var(--r);padding:14px;background:rgba(45,179,122,.05)">
+        <div class="field">
+          <label>Operator ID</label>
+          <input id="forgot-user" type="text" placeholder="username" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field">
+          <label>New Access Code</label>
+          <input id="forgot-pass" type="password" placeholder="new password">
+        </div>
+        <div id="forgot-msg" style="font-family:var(--ui);font-size:.75rem;min-height:18px;color:var(--yellow);"></div>
+        <button class="btn-primary" style="margin-top:8px" type="button" onclick="resetPassword()">Reset Password</button>
+      </div>
+      <div class="login-footer">
+        Default credentials are in the <span style="color:var(--orange)">robots.txt</span><br>
+        <!-- HINT: try operator / letmein -->
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:16px;font-family:var(--ui);font-size:.65rem;color:var(--wire2)">
+      DEEBUG CTF v3.1 · UNAUTHORISED ACCESS IS PROHIBITED
+    </div>
+  </div>
+</div>
+
+<!-- ══ SHARED NAV (hidden until login) ════════ -->
+<nav id="topnav" style="display:none">
+  <div class="nav-logo" onclick="goPage('dash')">DEEBUG<span>CTF</span></div>
+  <div class="navlink active" id="nav-dash" onclick="goPage('dash')">Dashboard</div>
+  <div class="navlink" id="nav-lab"  onclick="goPage('lab')">Terminal Lab</div>
+  <div class="navlink" id="nav-board" onclick="goPage('board')">Scoreboard</div>
+  <div class="navlink" id="nav-profile" onclick="goPage('profile')">Profile</div>
+  <div class="navlink" id="nav-admin" onclick="goPage('admin')" style="display:none">Admin Panel</div>
+  <div class="nav-spacer"></div>
+  <div class="nav-user">
+    <div class="nav-score-badge" id="nav-score-badge">0 pts</div>
+    <div class="nav-avatar" id="nav-avatar">?</div>
+    <span id="nav-username" style="font-family:var(--ui);font-size:.75rem;color:var(--body)"></span>
+    <button class="nav-btn nav-btn-ghost" onclick="doLogout()">Logout</button>
+  </div>
+</nav>
+
+<!-- ══ DASHBOARD ══════════════════════════════ -->
+<div id="page-dash" class="page">
+  <div id="dash-body">
+    <div class="dashboard-hero">
+      <h1>DEEBUG CTF Executive Dashboard</h1>
+      <p>Monitor your performance, track active challenges, and quickly jump to the ranking table for deeper insights.</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card" style="--c:var(--orange)" onclick="goPage('board')">
+        <div class="stat-label">Your Score</div>
+        <div class="stat-value" id="ds-score">0</div>
+        <div class="stat-sub">View ranking table</div>
+      </div>
+      <div class="stat-card" style="--c:var(--teal)" onclick="goPage('board')">
+        <div class="stat-label">Flags Found</div>
+        <div class="stat-value" id="ds-flags">0</div>
+        <div class="stat-sub">View ranking table</div>
+      </div>
+      <div class="stat-card" style="--c:var(--yellow)" onclick="goPage('board')">
+        <div class="stat-label">Rank</div>
+        <div class="stat-value" id="ds-rank">#—</div>
+        <div class="stat-sub">View ranking table</div>
+      </div>
+      <div class="stat-card" style="--c:var(--green)" onclick="goPage('board')">
+        <div class="stat-label">Elapsed</div>
+        <div class="stat-value" id="ds-time" style="font-size:1.5rem;margin-top:6px">00:00</div>
+        <div class="stat-sub">View ranking table</div>
+      </div>
+    </div>
+
+    <!-- Category breakdown -->
+    <div class="section-head">
+      <h2>Challenges</h2>
+      <div class="sh-line"></div>
+      <div class="sh-count" id="sh-count">0 / 33 solved</div>
+    </div>
+    <div class="chal-grid" id="chal-grid"></div>
+
+    <!-- Dashboard flag hint — hidden in a comment inside a card -->
+    <!-- FLAG{d4shb04rd_s0urc3_hunt3r} — found by inspecting dashboard HTML -->
+  </div>
+</div>
+
+<!-- ══ TERMINAL LAB ════════════════════════════ -->
+<div id="page-lab" class="page">
+  <div id="lab-body">
+    <div id="lab-sidebar">
+      <div id="lab-sidebar-header">
+        <h3>Active Challenge</h3>
+        <div id="active-chal-name">Select a challenge</div>
+      </div>
+      <div id="lab-flags-list"></div>
+      <div id="lab-submit">
+        <input id="lab-flag-input" type="text" placeholder="FLAG{...}" spellcheck="false" autocomplete="off">
+        <div id="lab-submit-row">
+          <button id="lab-submit-btn" onclick="labSubmit()">Submit Flag</button>
+        </div>
+        <div id="lab-submit-msg"></div>
+      </div>
+    </div>
+    <div id="lab-terminal">
+      <div id="term-topbar">
+        <div class="tdot td-r"></div>
+        <div class="tdot td-y"></div>
+        <div class="tdot td-g"></div>
+        <div id="term-titlelabel">root@deebug-ctf:~</div>
+      </div>
+      <div id="term-hint-bar" id="term-hint-bar"></div>
+      <div id="term-output"></div>
+      <div id="term-input-row">
+        <div id="term-ps1">root@deebug:~# </div>
+        <input id="term-input" type="text" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCOREBOARD ══════════════════════════════ -->
+<div id="page-board" class="page">
+  <div id="board-body">
+    <div class="section-head" style="margin-bottom:20px">
+      <h2>Scoreboard</h2>
+      <div class="sh-line"></div>
+      <div class="sh-count" id="board-updated">Live</div>
+    </div>
+
+    <!-- Score chart -->
+    <div id="score-chart-wrap">
+      <h3>Score Progression</h3>
+      <canvas id="score-canvas"></canvas>
+      <!-- FLAG hidden in canvas aria-label attribute — inspect element -->
+      <!-- FLAG{1nsp3ct_3l3m3nt_pr0} -->
+    </div>
+
+    <div class="board-header-row">
+      <div>Rank</div><div>Operator</div><div>Score</div>
+      <div>Flags</div><div>Last Flag</div><div>Δ</div>
+    </div>
+    <div id="board-rows"></div>
+  </div>
+</div>
+
+<!-- ══ PROFILE PAGE ═══════════════════════════ -->
+<div id="page-profile" class="page">
+  <div id="profile-body">
+    <div class="section-head" style="margin-bottom:18px">
+      <h2>Operator Profile</h2>
+      <div class="sh-line"></div>
+      <div class="sh-count" id="profile-status">Personal account controls</div>
+    </div>
+    <div class="profile-grid">
+      <div class="profile-card">
+        <h3>Summary</h3>
+        <div class="profile-field"><strong>Operator:</strong> <span id="pf-username"></span></div>
+        <div class="profile-field"><strong>Role:</strong> <span id="pf-role"></span></div>
+        <div class="profile-field"><strong>Special Flag:</strong> <span id="pf-special"></span></div>
+        <div class="profile-field"><strong>Score:</strong> <span id="pf-score"></span> pts</div>
+        <div class="profile-field"><strong>Flags Found:</strong> <span id="pf-flags"></span></div>
+        <div class="profile-field"><strong>Session Time:</strong> <span id="pf-time"></span></div>
+      </div>
+      <div class="profile-card">
+        <h3>Account Settings</h3>
+        <div class="field">
+          <label>New Access Code</label>
+          <input id="pf-new-pass" type="password" placeholder="leave blank to keep current">
+        </div>
+        <div class="field" style="display:flex;align-items:center;gap:8px;">
+          <input id="pf-special-toggle" type="checkbox">
+          <label for="pf-special-toggle" style="margin:0;font-size:.9rem;color:var(--body);font-family:var(--ui);">On special</label>
+        </div>
+        <div id="profile-msg" style="font-family:var(--ui);font-size:.75rem;min-height:18px;color:var(--green);"></div>
+        <button class="btn-primary" type="button" onclick="saveProfile()">Save Profile</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADMIN DASHBOARD ════════════════════════ -->
+<div id="page-admin" class="page">
+  <div id="admin-body">
+    <div class="admin-hero">
+      <h1>⚙️ ADMIN CONTROL CENTER</h1>
+      <p>Real-time monitoring of all CTF activities, user management, and platform analytics.</p>
+    </div>
+
+    <!-- Admin stats row -->
+    <div class="admin-stats">
+      <div class="admin-stat-card" style="--c:var(--orange)">
+        <div class="stat-label">Active Users</div>
+        <div class="stat-value" id="admin-active-users">0</div>
+        <div class="stat-sub">currently playing</div>
+      </div>
+      <div class="admin-stat-card" style="--c:var(--teal)">
+        <div class="stat-label">Flags Captured</div>
+        <div class="stat-value" id="admin-total-flags">0</div>
+        <div class="stat-sub">of 33 total</div>
+      </div>
+      <div class="admin-stat-card" style="--c:var(--green)">
+        <div class="stat-label">Completion Rate</div>
+        <div class="stat-value" id="admin-completion">0%</div>
+        <div class="stat-sub">average progress</div>
+      </div>
+      <div class="admin-stat-card" style="--c:var(--yellow)">
+        <div class="stat-label">Platform Status</div>
+        <div class="stat-value" id="admin-status" style="color:var(--green);font-size:1.4rem">✓ LIVE</div>
+        <div class="stat-sub">all systems ok</div>
+      </div>
+    </div>
+
+    <!-- User Management -->
+    <div class="admin-panel">
+      <h3>👥 User Management</h3>
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Score</th>
+            <th>Flags Found</th>
+            <th>Time Elapsed</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="admin-users-table">
+        </tbody>
+      </table>
+      <div id="admin-user-edit" style="display:none;margin-top:18px;border:1px solid var(--wire);border-radius:var(--r);padding:16px;background:rgba(232,98,42,.05)">
+        <h4>Edit selected operator</h4>
+        <div class="field">
+          <label>Username</label>
+          <div id="admin-edit-username" style="font-weight:700;color:var(--orange);"></div>
+        </div>
+        <div class="field">
+          <label>New Access Code</label>
+          <input id="admin-edit-pass" type="password" placeholder="leave blank to keep current">
+        </div>
+        <div class="field">
+          <label>Role</label>
+          <select id="admin-edit-role">
+            <option value="player">Player</option>
+            <option value="admin">Admin</option>
+            <option value="super_admin">Super Admin</option>
+          </select>
+        </div>
+        <div class="field" style="display:flex;align-items:center;gap:8px;">
+          <input id="admin-edit-special" type="checkbox">
+          <label for="admin-edit-special" style="margin:0;font-size:.9rem;color:var(--body);font-family:var(--ui);">Is on special</label>
+        </div>
+        <div id="admin-edit-msg" style="font-family:var(--ui);font-size:.75rem;min-height:18px;color:var(--green);"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn-primary" type="button" onclick="adminSaveUser()">Save Changes</button>
+          <button class="btn-secondary" type="button" onclick="adminDeleteUser()">Delete User</button>
+          <button class="nav-btn nav-btn-ghost" type="button" onclick="closeAdminUserEdit()">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Super Admin Controls (Only visible to super_admin) -->
+    <div class="admin-panel" id="super-admin-panel" style="display:none;">
+      <h3>⚙️ Super Admin Console</h3>
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-bottom:16px;">
+        <button class="btn-primary" style="background:var(--red);" onclick="superResetDatabase()">Reset System Database</button>
+        <button class="btn-primary" style="background:var(--teal); color:var(--ink);" onclick="superToggleFlags()">Toggle Flags Reveal</button>
+        <button class="btn-primary" style="background:var(--orange);" onclick="superExportDatabase()">Export DB Backup</button>
+        <button class="btn-primary" style="background:var(--wire2); position:relative;" onclick="document.getElementById('db-import-file').click();">
+          Import DB Backup
+          <input type="file" id="db-import-file" style="display:none;" onchange="superImportDatabase(event)">
+        </button>
+      </div>
+      <div id="super-flags-revealed" style="display:none; background:var(--ink3); border:1px solid var(--wire); padding:16px; border-radius:var(--r); font-family:var(--font); font-size:.8rem; max-height:200px; overflow-y:auto;">
+        <h4 style="color:var(--orange); margin-bottom:8px;">System Flags Inventory:</h4>
+        <div id="super-flags-list"></div>
+      </div>
+      <div id="super-admin-msg" style="font-family:var(--ui); font-size:.75rem; margin-top:8px; min-height:18px; color:var(--green);"></div>
+    </div>
+
+    <!-- Challenge Statistics -->
+    <div class="admin-panel">
+      <h3>🎯 Challenge Statistics</h3>
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Challenge</th>
+            <th>Category</th>
+            <th>Difficulty</th>
+            <th>Solved By</th>
+            <th>Success Rate</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="admin-challenges-table">
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Flag Distribution -->
+    <div class="admin-panel">
+      <h3>🚩 Flag Distribution Heat Map</h3>
+      <div id="admin-flag-heat" class="flag-heat"></div>
+    </div>
+
+    <!-- System Logs -->
+    <div class="admin-panel">
+      <h3>📋 Recent Activity</h3>
+      <div id="admin-activity-log" style="font-size:.78rem;line-height:1.8;color:var(--body);max-height:200px;overflow-y:auto;background:var(--ink3);padding:12px;border-radius:var(--r);font-family:var(--font)">
+        <!-- Activity logs will be populated here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL ══════════════════════════════════ -->
+<div id="modal">
+  <div id="mbox">
+    <div class="m-cat" id="m-cat"></div>
+    <h2 id="m-title"></h2>
+    <div class="m-desc" id="m-desc"></div>
+    <div id="m-hint-wrap">
+      <div class="m-hint-label">Intel</div>
+      <div class="m-hint-box" id="m-hint"></div>
+    </div>
+    <div class="m-actions">
+      <button class="mbtn mbtn-ghost" onclick="closeModal()">Close</button>
+      <button class="mbtn mbtn-orange" onclick="openLab()">Open in Lab →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOAST ══════════════════════════════════ -->
+<div id="toast"></div>
+
+<script>
+'use strict';
+// ══════════════════════════════════════════════════════════════
+//  ALL CHALLENGES & FLAGS (33 total)
+//  Flags hidden across: login source, dashboard source, scoreboard
+//  canvas attr, robots.txt simulation, cookies, localStorage keys,
+//  API endpoint simulation, CSS comments, terminal filesystem
+// ══════════════════════════════════════════════════════════════
+const CHALLENGES = [
+  // ── WEB RECON (flags hidden in UI pages) ─────────────────
+  {id:'w1',cat:'Web Recon',name:'View Source',diff:'easy',pts:50,
+   desc:'Every hacker starts by reading the page source. Something valuable is hidden in a comment on the login page.',
+   hint:'Open the login page → right-click → View Page Source. Search for FLAG{',
+   flag:'FLAG{v13w_s0urc3_f1rst_alw4ys}'},
+
+  {id:'w2',cat:'Web Recon',name:'Inspect Element',diff:'easy',pts:75,
+   desc:'The scoreboard chart element has a secret attribute. Browser DevTools → Elements tab.',
+   hint:'Open the Scoreboard page. Press F12 → Elements → find the <canvas> tag → look at its attributes.',
+   flag:'FLAG{1nsp3ct_3l3m3nt_pr0}'},
+
+  {id:'w3',cat:'Web Recon',name:'Dashboard Source',diff:'easy',pts:75,
+   desc:'The dashboard HTML source contains a hidden comment. You know what to do.',
+   hint:'On the Dashboard page: View Page Source (Ctrl+U) and search for FLAG{',
+   flag:'FLAG{d4shb04rd_s0urc3_hunt3r}'},
+
+  {id:'w4',cat:'Web Recon',name:'Cookie Monster',diff:'med',pts:125,
+   desc:'The platform sets a session cookie with a suspicious value. Check your browser cookies.',
+   hint:'F12 → Application (Chrome) or Storage (Firefox) → Cookies → find the session cookie value.',
+   flag:'FLAG{c00k13_m0nst3r_f0und}'},
+
+  {id:'w5',cat:'Web Recon',name:'Local Storage',diff:'med',pts:125,
+   desc:'Something was stored in localStorage that should not be there. Check your browser storage.',
+   hint:'F12 → Application → Local Storage → look at all keys, not just the obvious ones.',
+   flag:'FLAG{l0c4l_st0r4g3_l34k}'},
+
+  {id:'w6',cat:'Web Recon',name:'robots.txt',diff:'easy',pts:75,
+   desc:'The platform has a robots.txt. It lists paths that should not be indexed — including one with a flag.',
+   hint:'Imagine the URL: /robots.txt — what would it contain? The flag is in the Disallow comments.',
+   flag:'FLAG{r0b0ts_txt_3xp0s3d}'},
+
+  {id:'w7',cat:'Web Recon',name:'API Endpoint',diff:'hard',pts:200,
+   desc:'There is a hidden API debug endpoint. Call /api/v1/debug in the terminal with curl to retrieve the flag.',
+   hint:'In the terminal type: curl /api/v1/debug — the response JSON contains a flag field.',
+   flag:'FLAG{4p1_d3bug_3ndp01nt}'},
+
+  {id:'w8',cat:'Web Recon',name:'HTTP Headers',diff:'hard',pts:200,
+   desc:'The server leaks a flag in a custom HTTP response header. Use curl -I to see response headers.',
+   hint:'In the terminal: curl -I http://localhost — look for an X-Flag header in the response.',
+   flag:'FLAG{h3ad3r_1nj3ct10n}'},
+
+  // ── LINUX FILESYSTEM ─────────────────────────────────────
+  {id:'l1',cat:'Linux: Basics',name:'The Dotfile',diff:'easy',pts:50,
+   desc:'A hidden file in /home/operator contains a flag. Hidden files start with a dot.',
+   hint:'cd /home/operator && ls -la — look for a dotfile',
+   flag:'FLAG{d0tf1l3_d1sc0v3r3d}'},
+
+  {id:'l2',cat:'Linux: Basics',name:'MOTD Message',diff:'easy',pts:50,
+   desc:'The message of the day (/etc/motd) was customised by the sysadmin and hides a flag.',
+   hint:'cat /etc/motd',
+   flag:'FLAG{m0td_r34d3r}'},
+
+  {id:'l3',cat:'Linux: Basics',name:'Passwd Comment',diff:'easy',pts:75,
+   desc:'The GECOS field (field 5) of one entry in /etc/passwd contains a flag instead of a real name.',
+   hint:'cat /etc/passwd — look at the 5th colon-separated field for each user line.',
+   flag:'FLAG{p4sswd_g3c0s_s3cr3t}'},
+
+  {id:'l4',cat:'Linux: Basics',name:'End of Log',diff:'easy',pts:75,
+   desc:'/var/log/syslog has 900+ lines. The flag is on the very last line.',
+   hint:'tail -n 1 /var/log/syslog',
+   flag:'FLAG{t41l_3nd_0f_l0g}'},
+
+  {id:'l5',cat:'Linux: Basics',name:'Root Home',diff:'easy',pts:100,
+   desc:'Navigate to /root and list all files, including hidden ones. The flag is in a hidden file.',
+   hint:'ls -la /root — look for a dotfile',
+   flag:'FLAG{r00t_h0m3_0wn3d}'},
+
+  {id:'l6',cat:'Linux: Text',name:'Base64 Decode',diff:'med',pts:125,
+   desc:'cat /home/operator/.encoded — the file contains base64 data. Decode it.',
+   hint:'cat /home/operator/.encoded | base64 -d',
+   flag:'FLAG{b4s364_d3c0d3r_pr0}'},
+
+  {id:'l7',cat:'Linux: Text',name:'Grep the Log',diff:'med',pts:125,
+   desc:'1000 lines in /var/log/app.log. One line contains the word TROPHY. Use grep.',
+   hint:'grep "TROPHY" /var/log/app.log',
+   flag:'FLAG{gr3p_1s_3ss3nt14l}'},
+
+  {id:'l8',cat:'Linux: Text',name:'AWK Fields',diff:'med',pts:150,
+   desc:'/opt/data/ops.csv is a CSV. Extract field 6 from the row where field 2 equals SPECTRE.',
+   hint:"awk -F, '\\$2==\"SPECTRE\"{print \\$6}' /opt/data/ops.csv",
+   flag:'FLAG{4wk_csv_3xtr4ct10n}'},
+
+  {id:'l9',cat:'Linux: Text',name:'Reversed String',diff:'med',pts:125,
+   desc:'/opt/encoded/mirror.txt contains the flag written backwards. Use rev to flip it.',
+   hint:'rev /opt/encoded/mirror.txt',
+   flag:'FLAG{m1rr0r_r3v3rs3d}'},
+
+  {id:'l10',cat:'Linux: Text',name:'ROT13 Cipher',diff:'med',pts:150,
+   desc:'/opt/encoded/cipher.txt is ROT13 encoded. Decode it with tr.',
+   hint:"cat /opt/encoded/cipher.txt | tr 'a-zA-Z' 'n-za-mN-ZA-M'",
+   flag:'FLAG{r0t13_d3c0d3d_4g41n}'},
+
+  {id:'l11',cat:'Linux: Text',name:'Three Fragments',diff:'med',pts:175,
+   desc:'The flag is split across /opt/fragments/alpha, beta, gamma. Concatenate them in order.',
+   hint:'cat /opt/fragments/alpha /opt/fragments/beta /opt/fragments/gamma',
+   flag:'FLAG{fr4gm3nts_r3un1t3d}'},
+
+  {id:'l12',cat:'Linux: Text',name:'Hex Decode',diff:'hard',pts:200,
+   desc:'/opt/encoded/hex.txt contains a hex string. Decode it with xxd or python3.',
+   hint:"python3 -c \"print(bytes.fromhex('464c41477b6833785f6d4173743372217d').decode())\"",
+   flag:'FLAG{h3x_mAst3r!}'},
+
+  {id:'l13',cat:'Linux: Advanced',name:'Deep Directory',diff:'hard',pts:200,
+   desc:'A flag is hidden 9 directories deep inside /opt/maze. Use find or keep cd-ing.',
+   hint:'find /opt/maze -name "*.flag" 2>/dev/null',
+   flag:'FLAG{m4z3_w4lk3r_9_l3v3ls}'},
+
+  {id:'l14',cat:'Linux: Advanced',name:'Cron Script',diff:'hard',pts:200,
+   desc:'A cron job runs every minute. Find it in /etc/crontab and read the script it calls.',
+   hint:'cat /etc/crontab — find the script path — cat that script',
+   flag:'FLAG{cr0n_sc r1pt_3xp0s3d}'.replace(' ','')},
+
+  {id:'l15',cat:'Linux: Advanced',name:'SUID Binary',diff:'hard',pts:225,
+   desc:'Find all SUID binaries on the system. One path is suspiciously named.',
+   hint:'find / -perm -4000 2>/dev/null — one path contains FLAG{',
+   flag:'FLAG{su1d_b1n4ry_f0und}'},
+
+  {id:'l16',cat:'Linux: Advanced',name:'Environment Leak',diff:'med',pts:150,
+   desc:'A secret is exported inside /home/operator/.bashrc as an environment variable.',
+   hint:'cat /home/operator/.bashrc — look for export statements',
+   flag:'FLAG{3xp0rt_v4r_l34k3d}'},
+
+  {id:'l17',cat:'Linux: Advanced',name:'World Writable',diff:'hard',pts:225,
+   desc:'A world-writable file (chmod 777) contains a flag. Use find with -perm 777.',
+   hint:'find / -perm -0002 -type f 2>/dev/null',
+   flag:'FLAG{777_p3rm_d4ng3r0us}'},
+
+  {id:'l18',cat:'Linux: Advanced',name:'Strings in Binary',diff:'hard',pts:225,
+   desc:'/opt/bin/agent.elf looks like a binary. Use strings or grep to extract readable text.',
+   hint:'strings /opt/bin/agent.elf | grep FLAG',
+   flag:'FLAG{str1ngs_0n_b1n4ry}'},
+
+  {id:'l19',cat:'Linux: Advanced',name:'Auth Log',diff:'hard',pts:200,
+   desc:'grep /var/log/auth.log for lines containing OPERATION — a flag is embedded.',
+   hint:'grep "OPERATION" /var/log/auth.log',
+   flag:'FLAG{4uth_l0g_r34d3r}'},
+
+  {id:'l20',cat:'Linux: Advanced',name:'Symlink Target',diff:'hard',pts:225,
+   desc:'/opt/links/ contains symlinks. One points to an unusual target that holds a flag.',
+   hint:'ls -la /opt/links/ — follow the symlink that points outside /opt',
+   flag:'FLAG{syml1nk_targ3t_f0und}'},
+
+  {id:'l21',cat:'Linux: Expert',name:'/proc Secrets',diff:'expert',pts:300,
+   desc:'A fake /proc entry contains a flag. Not all /proc files are kernel-generated.',
+   hint:'ls /proc && cat /proc/secret',
+   flag:'FLAG{pr0c_f4k3_f1l3}'},
+
+  {id:'l22',cat:'Linux: Expert',name:'Heredoc Flag',diff:'expert',pts:300,
+   desc:'/opt/scripts/deploy.sh uses a heredoc. Read every line — the flag is inside the heredoc block.',
+   hint:'cat /opt/scripts/deploy.sh — look for << EOF blocks',
+   flag:'FLAG{h3r3d0c_1ns1d3}'},
+
+  {id:'l23',cat:'Linux: Expert',name:'Recursive Config',diff:'expert',pts:325,
+   desc:'grep -r through /opt/config for the string MASTER_KEY. The flag is its value.',
+   hint:'grep -r "MASTER_KEY" /opt/config 2>/dev/null',
+   flag:'FLAG{r3curs1v3_gr3p_m4st3r}'},
+
+  {id:'l24',cat:'Linux: Expert',name:'sudoers Vector',diff:'expert',pts:325,
+   desc:'/etc/sudoers reveals a NOPASSWD command. Read that script — it contains a flag.',
+   hint:'cat /etc/sudoers — find the NOPASSWD path — cat that file',
+   flag:'FLAG{sud03rs_pr1v3sc_p4th}'},
+
+  {id:'l25',cat:'Linux: Expert',name:'Newest File',diff:'expert',pts:300,
+   desc:'Find the most recently modified file under /var using find -newer. It holds a flag.',
+   hint:'find /var -type f -newer /etc/hostname 2>/dev/null',
+   flag:'FLAG{n3w3st_f1l3_w1ns}'},
+
+  // ── FINAL ──────────────────────────────────────────────
+  {id:'f1',cat:'Final Boss',name:'THE FINAL DECRYPTION',diff:'expert',pts:500,
+   desc:'Three files: /opt/final/shard_1, shard_2, shard_3. Each is ROT13 encoded. Decode each, then concatenate in order to get the flag.',
+   hint:"cat /opt/final/shard_1 | tr 'a-zA-Z' 'n-za-mN-ZA-M' — repeat for shard_2 and shard_3 — combine",
+   flag:'FLAG{f1n4l_d3crypt10n_c0mpl3t3}'},
+];
+
+// ══════════════════════════════════════════════════════════════
+//  VIRTUAL FILESYSTEM
+// ══════════════════════════════════════════════════════════════
+const FS = {
+  '/':{ type:'dir', children:['home','root','etc','var','opt','tmp','proc','bin','usr','dev'] },
+  '/home':{ type:'dir', children:['operator'] },
+  '/home/operator':{ type:'dir', children:['Desktop','Documents','.bashrc','.bash_history','.flag','.encoded','.ssh','.profile'] },
+  '/home/operator/.flag':{ type:'file', content:'FLAG{d0tf1l3_d1sc0v3r3d}' },
+  '/home/operator/.encoded':{ type:'file', content:'RkxBR3tiNHMzNjRfZDNjMGQzcl9wcjB9' }, // base64 of FLAG{b4s364_d3c0d3r_pr0}
+  '/home/operator/.bashrc':{ type:'file', content:'# /home/operator/.bashrc\nexport PATH=$PATH:/usr/local/bin\nalias ll="ls -la"\nalias grep="grep --color=auto"\n\n# Deployment secrets — migrate to vault!\nexport DEPLOY_KEY="FLAG{3xp0rt_v4r_l34k3d}"\nexport DB_PASS="n0t_th3_fl4g_3ith3r"\nexport API_SECRET="4ls0_n0t_1t_s0rry"' },
+  '/home/operator/.bash_history':{ type:'file', content:'whoami\nid\nls -la\ncd /etc\ncat passwd\nsudo -l\nfind / -perm -4000 2>/dev/null\ngrep -r "password" /var/www\ncat /root/.bashrc\nhistory' },
+  '/home/operator/.profile':{ type:'file', content:'# operator .profile\nif [ -f ~/.bashrc ]; then . ~/.bashrc; fi' },
+  '/home/operator/.ssh':{ type:'dir', children:['id_rsa','id_rsa.pub','known_hosts'] },
+  '/home/operator/.ssh/id_rsa':{ type:'file', content:'-----BEGIN RSA PRIVATE KEY-----\n[REDACTED]\n-----END RSA PRIVATE KEY-----', perms:'-rw-------' },
+  '/home/operator/.ssh/id_rsa.pub':{ type:'file', content:'ssh-rsa AAAAB3NzaC1yc2EAAAA... operator@opsec' },
+  '/home/operator/.ssh/known_hosts':{ type:'file', content:'10.0.0.1 ssh-rsa AAAA...\n192.168.1.1 ssh-rsa AAAB...' },
+  '/home/operator/Desktop':{ type:'dir', children:['mission_brief.txt','targets.csv'] },
+  '/home/operator/Desktop/mission_brief.txt':{ type:'file', content:'MISSION BRIEF — OP NIGHTFALL\n============================\nObjective: Enumerate all flags hidden across the OPSEC CTF platform.\nTotal flags: 33\nTime limit: 4 hours\n\nGood luck, operator.' },
+  '/home/operator/Desktop/targets.csv':{ type:'file', content:'id,ip,hostname,status\n1,10.0.0.1,web-01,alive\n2,10.0.0.2,db-01,alive\n3,10.0.0.3,backup-01,unknown' },
+  '/home/operator/Documents':{ type:'dir', children:['recon','notes.md'] },
+  '/home/operator/Documents/recon':{ type:'dir', children:['nmap.txt','gobuster.txt'] },
+  '/home/operator/Documents/recon/nmap.txt':{ type:'file', content:'Nmap 7.94 scan report for 10.0.0.1\nPORT    STATE SERVICE\n22/tcp  open  ssh\n80/tcp  open  http\n443/tcp open  https\n8080/tcp open  http-proxy' },
+  '/home/operator/Documents/recon/gobuster.txt':{ type:'file', content:'/admin (301)\n/backup (200)\n/api (200)\n/config (403)\n/.git (200)' },
+  '/home/operator/Documents/notes.md':{ type:'file', content:'# Op Notes\n- Check /proc for fake entries\n- Review crontab for suspicious scripts\n- sudoers has NOPASSWD entries\n- /opt/config has hardcoded credentials\n- Check for world-writable files' },
+
+  '/root':{ type:'dir', children:['.bashrc','.bash_history','.flag_root','proof.txt','.vault_notes'] },
+  '/root/.flag_root':{ type:'file', content:'FLAG{r00t_h0m3_0wn3d}', perms:'-rw-------' },
+  '/root/proof.txt':{ type:'file', content:'You have reached /root.\nThis machine is fully compromised.\nFLAG{r00t_h0m3_0wn3d}', perms:'-rw-------' },
+  '/root/.bashrc':{ type:'file', content:'# root .bashrc\nexport PATH=$PATH:/usr/local/sbin\nalias ll="ls -la"' },
+  '/root/.bash_history':{ type:'file', content:'whoami\ncat /etc/shadow\npasswd operator\nfind / -writable 2>/dev/null\ncrontab -l\ncat /opt/config/secrets/master.conf' },
+  '/root/.vault_notes':{ type:'file', content:'Vault address: https://vault.internal:8200\nToken: hvs.NOT_THE_FLAG\nNote: real creds in /opt/config/secrets/', perms:'-rw-------' },
+
+  '/etc':{ type:'dir', children:['passwd','shadow','hosts','hostname','crontab','sudoers','motd','os-release','cron.d','ssh'] },
+  '/etc/motd':{ type:'file', content:'\n  ██████╗ ██████╗ ███████╗███████╗ ██████╗\n  ██╔══██╗██╔══██╗██╔════╝██╔════╝██╔════╝\n  ██║  ██║██████╔╝███████╗█████╗  ██║\n  ██║  ██║██╔═══╝      ██║██╔══╝  ██║\n  ██████╔╝██║     ███████║███████╗╚██████╗\n\nFLAG{m0td_r34d3r}\n\nAuthorised personnel only.\n' },
+  '/etc/passwd':{ type:'file', content:'root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\noperator:x:1000:1000:FLAG{p4sswd_g3c0s_s3cr3t}:/home/operator:/bin/bash\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin\npostgres:x:110:118:PostgreSQL administrator:/var/lib/postgresql:/bin/bash\nsshd:x:103:65534::/run/sshd:/usr/sbin/nologin' },
+  '/etc/shadow':{ type:'file', content:'Permission denied.', perms:'-rw-r-----', owner:'root' },
+  '/etc/hosts':{ type:'file', content:'127.0.0.1   localhost\n127.0.1.1   opsec-ctf\n10.0.0.1    web.internal\n10.0.0.2    db.internal\n10.0.0.3    backup.internal' },
+  '/etc/hostname':{ type:'file', content:'opsec-ctf' },
+  '/etc/crontab':{ type:'file', content:'SHELL=/bin/sh\nPATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin\n\n# m  h  dom  mon  dow  user   command\n* *   *   *   *   root /opt/scripts/heartbeat.sh\n*/5 * *   *   *   root /opt/scripts/backup.sh\n0 2 *   *   *   root /opt/scripts/cleanup.sh\n0 0 *   *  0  root /opt/scripts/weekly.sh' },
+  '/etc/sudoers':{ type:'file', content:'Defaults env_reset\nDefaults mail_badpass\n\nroot    ALL=(ALL:ALL) ALL\n\n# Operator allowed commands\noperator ALL=(ALL) NOPASSWD: /usr/bin/find\noperator ALL=(ALL) NOPASSWD: /opt/scripts/privcheck.sh\n\n%sudo   ALL=(ALL:ALL) ALL', perms:'-r--r-----' },
+  '/etc/os-release':{ type:'file', content:'PRETTY_NAME="Kali GNU/Linux Rolling"\nNAME="Kali GNU/Linux"\nID=kali\nID_LIKE=debian\nVERSION="2024.2"\nHOME_URL="https://www.kali.org/"' },
+  '/etc/ssh':{ type:'dir', children:['sshd_config'] },
+  '/etc/ssh/sshd_config':{ type:'file', content:'Port 22\nPermitRootLogin yes\nPasswordAuthentication yes\nPubkeyAuthentication yes' },
+  '/etc/cron.d':{ type:'dir', children:['apt','php8'] },
+
+  '/var':{ type:'dir', children:['log','www','backups','tmp','mail'] },
+  '/var/log':{ type:'dir', children:['syslog','auth.log','app.log','kern.log','dpkg.log','apache2'] },
+  '/var/log/syslog':{ type:'file', content:(()=>{
+    const lines=[];
+    for(let i=1;i<900;i++) lines.push(`Jan 20 ${String(Math.floor(i/60)%24).padStart(2,'0')}:${String(i%60).padStart(2,'0')}:${String(i%60).padStart(2,'0')} opsec-ctf systemd[1]: heartbeat check #${i}`);
+    lines.push('Jan 20 23:59:59 opsec-ctf kernel: [9999.999] FLAG{t41l_3nd_0f_l0g}');
+    return lines.join('\n');
+  })() },
+  '/var/log/auth.log':{ type:'file', content:(()=>{
+    const lines=['Jan 20 08:00:00 opsec-ctf sshd[100]: Server listening on 0.0.0.0 port 22'];
+    for(let i=0;i<60;i++) lines.push(`Jan 20 08:${String(i).padStart(2,'0')}:00 opsec-ctf sshd[${900+i}]: Accepted password for operator from 10.0.0.${i+1} port ${40000+i}`);
+    lines.push('Jan 20 09:15:44 opsec-ctf sudo[1337]: OPERATION BLACKOUT — FLAG{4uth_l0g_r34d3r} — initiated by root');
+    for(let i=0;i<40;i++) lines.push(`Jan 20 10:${String(i).padStart(2,'0')}:00 opsec-ctf su[${2000+i}]: FAILED su for root by operator`);
+    return lines.join('\n');
+  })() },
+  '/var/log/app.log':{ type:'file', content:(()=>{
+    const levels=['DEBUG','INFO','WARN','ERROR'];
+    const lines=[];
+    for(let i=1;i<=500;i++) lines.push(`[${levels[i%4]}] req_${String(i).padStart(5,'0')} user=agent${i%20} status=${i%7===0?500:200} ms=${10+i%80}`);
+    lines.push('[INFO] req_00501 TROPHY_EVENT token=FLAG{gr3p_1s_3ss3nt14l} status=200 ms=12');
+    for(let i=502;i<=1000;i++) lines.push(`[${levels[i%4]}] req_${String(i).padStart(5,'0')} user=agent${i%20} status=${i%9===0?403:200} ms=${10+i%80}`);
+    return lines.join('\n');
+  })() },
+  '/var/log/apache2':{ type:'dir', children:['access.log','error.log'] },
+  '/var/log/apache2/access.log':{ type:'file', content:'10.0.0.1 - - [20/Jan/2024:08:00:01] "GET / HTTP/1.1" 200 11173\n10.0.0.1 - - [20/Jan/2024:08:00:02] "GET /admin HTTP/1.1" 301 0\n10.0.0.1 - admin [20/Jan/2024:08:01:00] "POST /login HTTP/1.1" 200 0' },
+  '/var/www':{ type:'dir', children:['html'] },
+  '/var/www/html':{ type:'dir', children:['index.html','config.php','.env','wp-config.php'] },
+  '/var/www/html/config.php':{ type:'file', content:'<?php\n$db_host="localhost";\n$db_user="webapp";\n$db_pass="W3b4pp_Sup3r_S3cur3!";\n$db_name="opsec_db";\n$api_secret="NOT_THE_FLAG_HERE";\n?>' },
+  '/var/www/html/.env':{ type:'file', content:'APP_ENV=production\nAPP_KEY=base64:NOT_REAL\nDB_HOST=localhost\nDB_PASSWORD=DBP4ss_2024!\nMAIL_PASSWORD=m41l_p4ss\nAWS_SECRET=NOT_REAL' },
+  '/var/backups':{ type:'dir', children:['etc_20240120.tar.gz','shadow.bak'] },
+  '/var/backups/shadow.bak':{ type:'file', content:'root:$6$salt$h4sh3dp4ss\noperator:$6$salt$h4sh3dp4ss2', perms:'-rw-------', owner:'root' },
+
+  '/opt':{ type:'dir', children:['scripts','data','encoded','fragments','config','bin','links','maze','final','writable'] },
+
+  '/opt/scripts':{ type:'dir', children:['heartbeat.sh','backup.sh','cleanup.sh','privcheck.sh','deploy.sh','weekly.sh'] },
+  '/opt/scripts/heartbeat.sh':{ type:'file', content:'#!/bin/bash\n# Cron: runs every minute as root\n# Verification token: FLAG{cr0n_scr1pt_3xp0s3d}\ndate >> /var/log/heartbeat.log\necho "alive" > /tmp/heartbeat', perms:'-rwxr-xr-x', owner:'root' },
+  '/opt/scripts/backup.sh':{ type:'file', content:'#!/bin/bash\ntar czf /var/backups/home_$(date +%Y%m%d).tar.gz /home/operator 2>/dev/null\necho "Backup complete"', perms:'-rwxr-xr-x', owner:'root' },
+  '/opt/scripts/cleanup.sh':{ type:'file', content:'#!/bin/bash\nfind /tmp -name "*.tmp" -mtime +1 -delete\necho "Cleaned"', perms:'-rwxr-xr-x', owner:'root' },
+  '/opt/scripts/privcheck.sh':{ type:'file', content:'#!/bin/bash\n# Allowed in sudoers: operator can run as root\necho "[*] Checking system vectors..."\nfind / -perm -4000 2>/dev/null\necho ""\necho "FLAG{sud03rs_pr1v3sc_p4th}"\necho "[*] Review /etc/sudoers for details"', perms:'-rwxr-xr-x', owner:'root' },
+  '/opt/scripts/deploy.sh':{ type:'file', content:'#!/bin/bash\n# Production deployment script\nVERSION="3.1.0"\necho "Deploying v$VERSION..."\n\ncat > /tmp/deploy.conf << HEREDOC\napp: opsec-ctf\nversion: 3.1.0\nflag: FLAG{h3r3d0c_1ns1d3}\nenv: production\nHEREDOC\n\necho "Done. Config at /tmp/deploy.conf"', perms:'-rwxr-xr-x' },
+  '/opt/scripts/weekly.sh':{ type:'file', content:'#!/bin/bash\necho "Weekly report" > /tmp/weekly.txt\ndf -h >> /tmp/weekly.txt\nwho >> /tmp/weekly.txt', perms:'-rwxr-xr-x', owner:'root' },
+
+  '/opt/data':{ type:'dir', children:['ops.csv','agents.db','inventory.json'] },
+  '/opt/data/ops.csv':{ type:'file', content:'ID,CODENAME,STATUS,REGION,CLEARANCE,TOKEN\n001,BLUEBIRD,ACTIVE,EU,TOP_SECRET,n0t_1t_s0rry\n002,IRONCLAD,RETIRED,APAC,SECRET,4ls0_n0p3\n003,SPECTRE,ACTIVE,AMER,TOP_SECRET,FLAG{4wk_csv_3xtr4ct10n}\n004,PHANTOM,INACTIVE,MENA,SECRET,wr0ng_4g41n\n005,CIPHER,ACTIVE,EU,TOP_SECRET,n3v3r_m1nd' },
+  '/opt/data/agents.db':{ type:'file', content:'id|handle|status|clearance\n1|ghost_0x|ACTIVE|L5\n2|n0x3r|ACTIVE|L4\n3|cipher7|RETIRED|L3' },
+
+  '/opt/encoded':{ type:'dir', children:['mirror.txt','cipher.txt','hex.txt'] },
+  '/opt/encoded/mirror.txt':{ type:'file', content:'}d3sr3v3r_r0rr1m{GALF' }, // reversed FLAG{mirr0r_r3v3rs3d}
+  '/opt/encoded/cipher.txt':{ type:'file', content:'SYNT{e0g13_q3p0q3q_4t41a}' }, // ROT13 of FLAG{r0t13_d3c0d3d_4g41n}
+  '/opt/encoded/hex.txt':{ type:'file', content:'464c41477b6833785f6d4173743372217d\n\n# Decode with: python3 -c "print(bytes.fromhex(\'464c41477b6833785f6d4173743372217d\').decode())"' },
+
+  '/opt/fragments':{ type:'dir', children:['alpha','beta','gamma','decoy'] },
+  '/opt/fragments/alpha':{ type:'file', content:'FLAG{fr4gm3nts' },
+  '/opt/fragments/beta':{ type:'file', content:'_r3un1t3d' },
+  '/opt/fragments/gamma':{ type:'file', content:'}' },
+  '/opt/fragments/decoy':{ type:'file', content:'Not a fragment. A distraction.' },
+
+  '/opt/config':{ type:'dir', children:['app.conf','db.conf','secrets'] },
+  '/opt/config/app.conf':{ type:'file', content:'[app]\nhost=0.0.0.0\nport=8080\nlog_level=INFO\ndebug=false' },
+  '/opt/config/db.conf':{ type:'file', content:'[database]\nhost=localhost\nport=5432\nname=opsecdb\nuser=opsec_app\npassword=DB_Sup3r_S3cur3_2024' },
+  '/opt/config/secrets':{ type:'dir', children:['api_keys.conf','master.conf'] },
+  '/opt/config/secrets/api_keys.conf':{ type:'file', content:'[keys]\nstripe=sk_live_NOT_REAL\nsendgrid=SG.NOT_REAL\n# No flags here, keep looking' },
+  '/opt/config/secrets/master.conf':{ type:'file', content:'[master]\nsystem_token=SYS_T0K3N_NOT_FLAG\n\n# MASTER_KEY = FLAG{r3curs1v3_gr3p_m4st3r}\n# ^ found it? good job.' },
+
+  '/opt/bin':{ type:'dir', children:['agent.elf','scanner','patcher'] },
+  '/opt/bin/agent.elf':{ type:'file', content:'\x00ELF\x02\x01garbage_data_XXXXXX\nBBBBBBBBBBBBBB\nCCCCCCCCCCCC\x00\x01\x02FLAG{str1ngs_0n_b1n4ry}\x00\x00\x00\nmore_junk_DDDDDDDDDD\n\xff\xfe\xfd\x00' },
+  '/opt/bin/scanner':{ type:'file', content:'[ELF binary — not human readable]\nUse strings to extract text.', perms:'-rwxr-xr-x' },
+
+  '/opt/links':{ type:'dir', children:['link_docs','link_etc','link_shadow','secret_link'] },
+  '/opt/links/link_docs':{ type:'symlink', target:'/home/operator/Documents/notes.md' },
+  '/opt/links/link_etc':{ type:'symlink', target:'/etc/hostname' },
+  '/opt/links/link_shadow':{ type:'symlink', target:'/etc/shadow' },
+  '/opt/links/secret_link':{ type:'symlink', target:'/opt/.hidden_vault/token.txt' },
+  '/opt/.hidden_vault':{ type:'dir', children:['token.txt'] },
+  '/opt/.hidden_vault/token.txt':{ type:'file', content:'FLAG{syml1nk_targ3t_f0und}' },
+
+  '/opt/writable':{ type:'dir', children:['community.txt','shared.log'] },
+  '/opt/writable/community.txt':{ type:'file', content:'Community notes:\n\nFLAG{777_p3rm_d4ng3r0us}\n\nAdd your notes here.', perms:'-rwxrwxrwx' },
+  '/opt/writable/shared.log':{ type:'file', content:'[log entries]\n2024-01-20 10:00:00 operator login\n2024-01-20 10:05:12 operator ran find', perms:'-rw-rw-rw-' },
+
+  '/opt/final':{ type:'dir', children:['shard_1','shard_2','shard_3','README'] },
+  '/opt/final/README':{ type:'file', content:'FINAL CHALLENGE\n===============\nThree shards. Each ROT13 encoded.\nDecode each, concatenate in order.\nshard_1 + shard_2 + shard_3 = final flag.\nGood luck.' },
+  '/opt/final/shard_1':{ type:'file', content:'SYNT{s1a4y' },   // ROT13 → FLAG{f1n4l
+  '/opt/final/shard_2':{ type:'file', content:'_q3pelcg10a' },  // ROT13 → _d3crypt10n
+  '/opt/final/shard_3':{ type:'file', content:'_p0zcyr3gr}' },  // ROT13 → _c0mpl3t3}
+
+  // Maze — 9 levels deep
+  '/opt/maze':{ type:'dir', children:['l1'] },
+  '/opt/maze/l1':{ type:'dir', children:['l2','decoy.txt'] },
+  '/opt/maze/l1/decoy.txt':{ type:'file', content:'Not here.' },
+  '/opt/maze/l1/l2':{ type:'dir', children:['l3'] },
+  '/opt/maze/l1/l2/l3':{ type:'dir', children:['l4','false.txt'] },
+  '/opt/maze/l1/l2/l3/false.txt':{ type:'file', content:'Nope.' },
+  '/opt/maze/l1/l2/l3/l4':{ type:'dir', children:['l5'] },
+  '/opt/maze/l1/l2/l3/l4/l5':{ type:'dir', children:['l6','red_herring.txt'] },
+  '/opt/maze/l1/l2/l3/l4/l5/red_herring.txt':{ type:'file', content:'Almost.' },
+  '/opt/maze/l1/l2/l3/l4/l5/l6':{ type:'dir', children:['l7'] },
+  '/opt/maze/l1/l2/l3/l4/l5/l6/l7':{ type:'dir', children:['l8'] },
+  '/opt/maze/l1/l2/l3/l4/l5/l6/l7/l8':{ type:'dir', children:['l9'] },
+  '/opt/maze/l1/l2/l3/l4/l5/l6/l7/l8/l9':{ type:'dir', children:['.maze_flag'] },
+  '/opt/maze/l1/l2/l3/l4/l5/l6/l7/l8/l9/.maze_flag':{ type:'file', content:'FLAG{m4z3_w4lk3r_9_l3v3ls}' },
+
+  '/proc':{ type:'dir', children:['version','cpuinfo','meminfo','secret','net'] },
+  '/proc/version':{ type:'file', content:'Linux version 6.1.0-kali9-amd64 (devel@kali.org) (gcc 12.2.0) #1 SMP PREEMPT Debian 6.1.27-1' },
+  '/proc/cpuinfo':{ type:'file', content:'processor\t: 0\nmodel name\t: Intel Core i7-13700H @ 2.40GHz\ncpu MHz\t\t: 2400.000' },
+  '/proc/meminfo':{ type:'file', content:'MemTotal:\t16384000 kB\nMemFree:\t  8192000 kB\nMemAvailable:\t 10240000 kB' },
+  '/proc/secret':{ type:'file', content:'FLAG{pr0c_f4k3_f1l3}' },
+  '/proc/net':{ type:'dir', children:['tcp','udp'] },
+  '/proc/net/tcp':{ type:'file', content:'sl  local_address rem_address  st\n 0: 00000000:0016 00000000:0000 0A\n 1: 0100007F:1F40 00000000:0000 0A' },
+
+  '/tmp':{ type:'dir', children:['heartbeat','session.tmp','xf3r_9k2.dat','deploy.conf'] },
+  '/tmp/xf3r_9k2.dat':{ type:'file', content:'temp evidence file\nFLAG hidden: not here, keep looking' },
+  '/tmp/session.tmp':{ type:'file', content:'session_id=8f2c4a1d\nuser=operator\nexpires=1705363200' },
+
+  '/bin':{ type:'dir', children:['bash','sh','ls','cat','find','grep','awk','sed','cut','rev','base64','tr','strings','wc','echo','ps','ping','date','hostname','id','whoami'] },
+  '/usr':{ type:'dir', children:['bin','share','local'] },
+  '/usr/bin':{ type:'dir', children:['python3','nmap','curl','wget','nc','xxd','ssh','sudo','vim','nano','less','more','file','stat','diff','sort','uniq','head','tail','chmod','chown','chattr','lsattr','strace','ltrace'] },
+  '/usr/share':{ type:'dir', children:['wordlists','doc'] },
+  '/usr/share/wordlists':{ type:'dir', children:['rockyou.txt.gz','dirbuster'] },
+  '/dev':{ type:'dir', children:['null','zero','random','urandom','sda','tty'] },
+};
+
+// Add SUID path with flag
+FS['/usr/bin/FLAG{su1d_b1n4ry_f0und}'] = { type:'file', content:'[SUID binary — suspicious name]', perms:'-rwsr-xr-x' };
+FS['/usr/bin'].children.push('FLAG{su1d_b1n4ry_f0und}');
+
+// Newest file
+FS['/var/log/latest_evidence.log'] = { type:'file', content:'[CRITICAL] Anomaly detected at 23:59:59\nFLAG{n3w3st_f1l3_w1ns}\nAction required.' };
+FS['/var/log'].children.push('latest_evidence.log');
+
+// ══════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════
+let currentUser = null;
+let found = [];
+let score = 0;
+let startTime = null;
+let activeChalId = null;
+let cmdHist = [];
+let histIdx = -1;
+let cwd = '/home/operator';
+
+const USERS = [];
+
+// ══════════════════════════════════════════════════════════════
+//  UNIFIED DATABASE ENGINE (CTFDatabase)
+// ══════════════════════════════════════════════════════════════
+const CTFDatabase = {
+  STORAGE_KEY: 'opsec_ctf_db_v2',
+
+  init() {
+    let stored = null;
+    try {
+      stored = JSON.parse(localStorage.getItem(this.STORAGE_KEY));
+    } catch(e) {
+      console.error("Failed to parse database", e);
+    }
+
+    if (!stored || !stored.users) {
+      stored = { users: {} };
+    }
+
+    // Default basic accounts
+    const defaultUsers = [
+      { user: 'operator', pass: 'letmein', role: 'player', is_on_special: false, tag: 'Operator', startTime: Date.now() },
+      { user: 'admin', pass: '4dm1n_0psec', role: 'super_admin', is_on_special: false, tag: 'Super Administrator', startTime: Date.now() }
+    ];
+
+    defaultUsers.forEach(u => {
+      if (!stored.users[u.user]) {
+        stored.users[u.user] = {
+          ...u,
+          score: 0,
+          found: [],
+          lastActive: 'now'
+        };
+      }
+    });
+
+    // Scoreboard operators
+    const fakePlayers = [
+      { user: 'Ghost_0x41', pass: 'ghostpass', role: 'player', is_on_special: false, tag: 'Elite Operator', score: 5500, foundCount: 28 },
+      { user: 'n0x3r', pass: 'noxerpass', role: 'player', is_on_special: false, tag: 'Red Team Lead', score: 4775, foundCount: 23 },
+      { user: 'cipher7', pass: 'cipherpass', role: 'player', is_on_special: false, tag: 'CTF Veteran', score: 4050, foundCount: 19 },
+      { user: 'phantom_ph', pass: 'phantompass', role: 'player', is_on_special: false, tag: 'Recon Specialist', score: 3150, foundCount: 14 },
+      { user: 'kali_hunter', pass: 'kalipass', role: 'player', is_on_special: false, tag: 'Beginner', score: 2175, foundCount: 9 },
+      { user: 'sec_noob', pass: 'noobpass', role: 'player', is_on_special: false, tag: 'Learning', score: 200, foundCount: 3 }
+    ];
+
+    fakePlayers.forEach(p => {
+      if (!stored.users[p.user]) {
+        const resolvedFlags = this.resolveFlagsForPlayer(p.foundCount, p.score);
+        stored.users[p.user] = {
+          user: p.user,
+          pass: p.pass,
+          role: p.role,
+          is_on_special: p.is_on_special,
+          tag: p.tag,
+          score: p.score,
+          found: resolvedFlags,
+          startTime: Date.now() - (3600 * 1000 * (Math.random() * 4 + 1)),
+          lastActive: (Math.floor(Math.random() * 59) + 1) + 'm ago'
+        };
+      }
+    });
+
+    // Legacy migration
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('opsec_user_')) {
+        const username = key.substring('opsec_user_'.length);
+        if (!stored.users[username]) {
+          try {
+            const u = JSON.parse(localStorage.getItem(key));
+            if (u && u.user) {
+              const legacyFound = JSON.parse(localStorage.getItem('opsec_found_' + username) || '[]');
+              const legacyScore = parseInt(localStorage.getItem('opsec_score_' + username) || '0');
+              const legacyStart = parseInt(localStorage.getItem('opsec_start_' + username) || Date.now());
+              stored.users[username] = {
+                user: u.user,
+                pass: u.pass,
+                role: u.role || 'player',
+                is_on_special: u.is_on_special || false,
+                tag: u.role === 'admin' ? 'Administrator' : 'Operator',
+                score: legacyScore,
+                found: legacyFound,
+                startTime: legacyStart,
+                lastActive: 'now'
+              };
+            }
+          } catch(e) {}
+        }
+      }
+    });
+
+    this.save(stored);
+    this.syncToGlobalUsers();
+  },
+
+  save(state) {
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(state));
+  },
+
+  getState() {
+    let state = null;
+    try {
+      state = JSON.parse(localStorage.getItem(this.STORAGE_KEY));
+    } catch(e) {}
+    if (!state || !state.users) {
+      state = { users: {} };
+    }
+    return state;
+  },
+
+  syncToGlobalUsers() {
+    const state = this.getState();
+    USERS.length = 0;
+    Object.values(state.users).forEach(u => {
+      USERS.push(u);
+    });
+  },
+
+  resolveFlagsForPlayer(count, score) {
+    const result = [];
+    const chSorted = [...CHALLENGES].sort((a,b) => b.pts - a.pts);
+    
+    function backtrack(index, currentSum, currentList) {
+      if (currentList.length === count) {
+        if (currentSum === score) {
+          result.push(...currentList);
+          return true;
+        }
+        return false;
+      }
+      if (index >= chSorted.length || currentSum > score) return false;
+      
+      currentList.push(chSorted[index].id);
+      if (backtrack(index + 1, currentSum + chSorted[index].pts, currentList)) {
+        return true;
+      }
+      currentList.pop();
+      
+      if (backtrack(index + 1, currentSum, currentList)) {
+        return true;
+      }
+      return false;
+    }
+
+    if (backtrack(0, 0, [])) {
+      return result;
+    }
+    return CHALLENGES.slice(0, count).map(c => c.id);
+  },
+
+  getUser(username) {
+    const state = this.getState();
+    return state.users[username] || null;
+  },
+
+  saveUser(user) {
+    const state = this.getState();
+    state.users[user.user] = { ...user };
+    this.save(state);
+    this.syncToGlobalUsers();
+  },
+
+  deleteUser(username) {
+    const state = this.getState();
+    delete state.users[username];
+    this.save(state);
+    this.syncToGlobalUsers();
+    localStorage.removeItem('opsec_user_' + username);
+    localStorage.removeItem('opsec_found_' + username);
+    localStorage.removeItem('opsec_score_' + username);
+    localStorage.removeItem('opsec_start_' + username);
+  },
+
+  reset() {
+    localStorage.removeItem(this.STORAGE_KEY);
+    this.init();
+  }
+};
+
+CTFDatabase.init();
+
+function saveUser(user){
+  CTFDatabase.saveUser(user);
+}
+
+// Hidden flag #5 in localStorage — set on page load
+localStorage.setItem('__opsec_debug_token', 'FLAG{l0c4l_st0r4g3_l34k}');
+
+// Cookie flag
+function setCookieFlag(){
+  document.cookie = 'session_token=FLAG{c00k13_m0nst3r_f0und}; path=/';
+}
+setCookieFlag();
+
+// canvas aria-label flag
+document.getElementById('score-canvas').setAttribute('aria-label','FLAG{1nsp3ct_3l3m3nt_pr0}');
+
+// ══════════════════════════════════════════════════════════════
+//  LOGIN
+// ══════════════════════════════════════════════════════════════
+function doLogin(){
+  const u = document.getElementById('li-user').value.trim();
+  const p = document.getElementById('li-pass').value;
+  const err = document.getElementById('login-err');
+  if(!u||!p){ err.textContent='All fields required.'; return; }
+  const match = USERS.find(x=>x.user===u&&x.pass===p);
+  if(!match){ err.textContent='Authentication failed. Incorrect credentials.'; return; }
+  currentUser = match;
+  found = match.found || [];
+  score = match.score || 0;
+  startTime = match.startTime || Date.now();
+  match.startTime = startTime;
+  CTFDatabase.saveUser(match);
+  document.getElementById('topnav').style.display='flex';
+  
+  let roleTag = '';
+  if(match.role==='admin') roleTag = ' [ADMIN]';
+  else if(match.role==='super_admin') roleTag = ' [SUPER ADMIN]';
+  
+  document.getElementById('nav-username').textContent=u+roleTag;
+  document.getElementById('nav-avatar').textContent=u[0].toUpperCase();
+  if(match.role==='admin' || match.role==='super_admin') document.getElementById('nav-admin').style.display='flex';
+  updateNavScore();
+  goPage('dash');
+  startTimer();
+}
+document.getElementById('li-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('li-user').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('li-pass').focus(); });
+
+function toggleCreateAccount(){
+  const panel=document.getElementById('create-account-panel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleForgotPanel(){
+  const panel=document.getElementById('forgot-panel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function resetPassword(){
+  const u=document.getElementById('forgot-user').value.trim();
+  const p=document.getElementById('forgot-pass').value;
+  const msg=document.getElementById('forgot-msg');
+  if(!u || !p){ msg.style.color='var(--red)'; msg.textContent='Operator ID and new access code are required.'; return; }
+  const user=CTFDatabase.getUser(u);
+  if(!user){ msg.style.color='var(--yellow)'; msg.textContent='No operator found with that ID.'; return; }
+  user.pass = p;
+  CTFDatabase.saveUser(user);
+  msg.style.color='var(--green)';
+  msg.textContent='Access code reset successfully. You can now login.';
+  document.getElementById('forgot-user').value='';
+  document.getElementById('forgot-pass').value='';
+}
+
+function createAccount(){
+  const u=document.getElementById('new-user').value.trim();
+  const p=document.getElementById('new-pass').value;
+  const special=document.getElementById('new-special').checked;
+  const msg=document.getElementById('create-account-msg');
+  if(!u || !p){ msg.style.color='var(--red)'; msg.textContent='Username and password are required.'; return; }
+  if(USERS.some(x=>x.user===u)){ msg.style.color='var(--yellow)'; msg.textContent='Operator ID already exists.'; return; }
+  const user={ user:u, pass:p, role:'player', is_on_special:special, score:0, found:[], startTime:Date.now(), lastActive:'now' };
+  CTFDatabase.saveUser(user);
+  msg.style.color='var(--green)';
+  msg.textContent=`Operator "${u}" created with is_on_special=${special}.`;
+  document.getElementById('new-user').value='';
+  document.getElementById('new-pass').value='';
+  document.getElementById('new-special').checked=true;
+}
+
+function doLogout(){
+  if(!confirm('End session and logout?')) return;
+  saveProgress();
+  currentUser=null; found=[]; score=0; startTime=null;
+  document.getElementById('topnav').style.display='none';
+  document.getElementById('nav-admin').style.display='none';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-login').classList.add('active');
+  document.getElementById('li-user').value='';
+  document.getElementById('li-pass').value='';
+  document.getElementById('login-err').textContent='';
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PAGE NAVIGATION
+// ══════════════════════════════════════════════════════════════
+let viewedProfileUser = null;
+
+function goPage(name, profileUser){
+  if(!currentUser&&name!=='login') return;
+  if(name==='admin'&&currentUser?.role!=='admin'&&currentUser?.role!=='super_admin') { alert('Admin access denied'); return; }
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.navlink').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const nl = document.getElementById('nav-'+name);
+  if(nl) nl.classList.add('active');
+  
+  if(name==='profile'){
+    viewedProfileUser = profileUser || currentUser.user;
+    renderProfile();
+  } else {
+    viewedProfileUser = null;
+  }
+  
+  if(name==='dash') renderDash();
+  if(name==='board') renderBoard();
+  if(name==='admin') renderAdmin();
+  if(name==='lab'){ renderLabFlags(); document.getElementById('term-input').focus(); }
+}
+
+function renderProfile(){
+  if(!currentUser) return;
+  const targetUsername = viewedProfileUser || currentUser.user;
+  const user = CTFDatabase.getUser(targetUsername);
+  if(!user){
+    alert('Operator not found');
+    goPage('dash');
+    return;
+  }
+  
+  const isOwnProfile = (user.user === currentUser.user);
+  
+  document.getElementById('profile-status').textContent = isOwnProfile ? 'Personal account controls' : `Viewing profile of operator ${user.user}`;
+  document.getElementById('pf-username').textContent = user.user;
+  
+  let displayRole = user.role.toUpperCase();
+  if(user.role === 'super_admin') displayRole = 'SUPER ADMIN';
+  document.getElementById('pf-role').textContent = displayRole;
+  
+  document.getElementById('pf-special').textContent = user.is_on_special ? 'Yes' : 'No';
+  
+  const uFound = user.found || [];
+  const uScore = user.score || 0;
+  document.getElementById('pf-score').textContent = uScore;
+  document.getElementById('pf-flags').textContent = uFound.length;
+  
+  const elapsed = Math.floor((Date.now() - (user.startTime || Date.now()))/1000);
+  const h = Math.floor(elapsed/3600), m = Math.floor((elapsed%3600)/60);
+  document.getElementById('pf-time').textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  
+  const settingsCard = document.querySelector('#page-profile .profile-grid').children[1];
+  
+  if (isOwnProfile) {
+    settingsCard.innerHTML = `
+      <h3>Account Settings</h3>
+      <div class="field">
+        <label>New Access Code</label>
+        <input id="pf-new-pass" type="password" placeholder="leave blank to keep current">
+      </div>
+      <div class="field" style="display:flex;align-items:center;gap:8px;">
+        <input id="pf-special-toggle" type="checkbox" ${user.is_on_special ? 'checked' : ''}>
+        <label for="pf-special-toggle" style="margin:0;font-size:.9rem;color:var(--body);font-family:var(--ui);">On special</label>
+      </div>
+      <div id="profile-msg" style="font-family:var(--ui);font-size:.75rem;min-height:18px;color:var(--green);"></div>
+      <button class="btn-primary" type="button" onclick="saveProfile()">Save Profile</button>
+    `;
+  } else {
+    const solvedList = uFound.map(cid => {
+      const chal = CHALLENGES.find(c => c.id === cid);
+      if(!chal) return '';
+      const diffMap = {easy: 'tag-easy', med: 'tag-med', hard: 'tag-hard', expert: 'tag-expert'};
+      return `
+        <div class="chal-card solved" style="cursor: default; padding: 12px; margin-bottom: 8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="chal-name" style="margin:0; font-size:.85rem;">${chal.name}</span>
+            <span class="tag ${diffMap[chal.diff]}" style="font-size:.55rem;">${chal.diff}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; font-size:.7rem; color:var(--dim);">
+            <span>${chal.cat}</span>
+            <span class="chal-pts" style="color:var(--green); background:rgba(45,179,122,.1); padding:1px 5px; font-size:.65rem;">+${chal.pts} pts</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    const isAdminUser = (currentUser.role === 'admin' || currentUser.role === 'super_admin');
+    const adminActionHtml = isAdminUser ? `
+      <div style="margin-top:16px; border-top:1px dashed var(--wire); padding-top:12px; display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:.75rem; color:var(--dim);">Admin Shortcuts</span>
+        <button class="admin-btn" style="font-size:.7rem;" onclick="adminManageFromProfile('${user.user}')">Manage User</button>
+      </div>
+    ` : '';
+
+    settingsCard.innerHTML = `
+      <h3>Solved Challenges (${uFound.length})</h3>
+      <div style="max-height: 250px; overflow-y: auto; padding-right: 4px;">
+        ${solvedList || '<div style="color:var(--dim); font-size:.8rem; text-align:center; padding:20px;">No challenges solved yet.</div>'}
+      </div>
+      ${adminActionHtml}
+    `;
+  }
+}
+
+function adminManageFromProfile(username) {
+  goPage('admin');
+  adminOpenUser(username);
+}
+
+function saveProfile(){
+  if(!currentUser) return;
+  const pass=document.getElementById('pf-new-pass').value;
+  const special=document.getElementById('pf-special-toggle').checked;
+  if(pass) currentUser.pass = pass;
+  currentUser.is_on_special = special;
+  saveUser(currentUser);
+  document.getElementById('profile-msg').style.color='var(--green)';
+  document.getElementById('profile-msg').textContent='Profile saved successfully.';
+  document.getElementById('pf-special').textContent = currentUser.is_on_special ? 'Yes' : 'No';
+  if(pass) document.getElementById('pf-new-pass').value = '';
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CHALLENGE MODAL
+// ══════════════════════════════════════════════════════════════
+let modalChalId = null;
+function openChallenge(id){
+  const c = CHALLENGES.find(x=>x.id===id);
+  if(!c) return;
+  modalChalId = id;
+  const diffMap={easy:'tag-easy',med:'tag-med',hard:'tag-hard',expert:'tag-expert'};
+  document.getElementById('m-cat').innerHTML=`${c.cat} &nbsp;<span class="tag ${diffMap[c.diff]}">${c.diff}</span>&nbsp;<span style="color:var(--orange)">${c.pts} pts</span>`;
+  document.getElementById('m-title').textContent=c.name;
+  document.getElementById('m-desc').textContent=c.desc;
+  document.getElementById('m-hint').textContent=c.hint;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+function openLab(){
+  closeModal();
+  activeChalId = modalChalId;
+  const c = CHALLENGES.find(x=>x.id===activeChalId);
+  if(c) document.getElementById('active-chal-name').textContent=c.name;
+  const hint=CHALLENGES.find(x=>x.id===activeChalId)?.hint||'';
+  const hb=document.getElementById('term-hint-bar');
+  hb.textContent='Intel: '+hint; hb.style.display='block';
+  renderLabFlags();
+  goPage('lab');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  FLAG AWARD
+// ══════════════════════════════════════════════════════════════
+function awardFlag(chalId){
+  const c=CHALLENGES.find(x=>x.id===chalId);
+  if(!c||found.includes(chalId)) return;
+  found.push(chalId);
+  score+=c.pts;
+  saveProgress();
+  updateNavScore();
+  updateDashStats();
+  renderLabFlags();
+  toast(`🚩 FLAG! "${c.name}" +${c.pts} pts`,'green');
+  logActivity(`Flag captured by ${currentUser.user}: ${c.name}`);
+  const card=document.getElementById('cc-'+chalId);
+  if(card) card.classList.add('solved');
+}
+
+function checkFlag(val){
+  const v=val.trim();
+  const c=CHALLENGES.find(x=>x.flag===v);
+  if(!c) return false;
+  if(found.includes(c.id)){ return 'dup'; }
+  awardFlag(c.id);
+  return true;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════════════════════════
+function renderDash(){
+  updateDashStats();
+  const grid=document.getElementById('chal-grid');
+  const cats=[...new Set(CHALLENGES.map(c=>c.cat))];
+  let html='';
+  cats.forEach(cat=>{
+    html+=`<div style="grid-column:1/-1"><div class="section-head" style="margin-top:8px;margin-bottom:10px"><h2 style="font-size:1rem;color:var(--dim)">${cat}</h2><div class="sh-line"></div></div></div>`;
+    CHALLENGES.filter(c=>c.cat===cat).forEach(c=>{
+      const sv=found.includes(c.id);
+      const dm={easy:'dp-easy',med:'dp-med',hard:'dp-hard',expert:'dp-expert'};
+      html+=`<div class="chal-card ${sv?'solved':''}" id="cc-${c.id}" onclick="openChallenge('${c.id}')">
+        <div class="chal-cat">${c.cat}</div>
+        <div class="chal-name">${c.name}</div>
+        <div class="chal-desc">${c.desc.slice(0,80)}...</div>
+        <div class="chal-footer">
+          <div class="diff-pip ${dm[c.diff]}"></div>
+          <div class="chal-diff">${c.diff}</div>
+          <div class="chal-pts">${sv?'✓ ':''} ${c.pts}pts</div>
+        </div>
+      </div>`;
+    });
+  });
+  grid.innerHTML=html;
+  document.getElementById('sh-count').textContent=`${found.length} / ${CHALLENGES.length} solved`;
+}
+
+function updateDashStats(){
+  document.getElementById('ds-score').textContent=score;
+  document.getElementById('ds-flags').textContent=found.length;
+  const rank=getRank();
+  document.getElementById('ds-rank').textContent='#'+rank;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SCOREBOARD
+// ══════════════════════════════════════════════════════════════
+function getRank(){
+  const allScores = USERS.map(u => u.score || 0).sort((a,b)=>b-a);
+  return allScores.indexOf(score)+1;
+}
+
+function renderBoard(){
+  const allUsers = [...USERS];
+  const allPlayers = allUsers.map(u => {
+    const isMe = (u.user === currentUser?.user);
+    let tag = u.tag || (u.role === 'admin' || u.role === 'super_admin' ? 'Administrator' : 'Operator');
+    if (isMe) tag = 'Current Session';
+    let last = u.lastActive || 'now';
+    
+    return {
+      name: u.user,
+      tag: tag,
+      score: u.score || 0,
+      flags: (u.found || []).length,
+      last: last,
+      delta: 0,
+      isMe: isMe
+    };
+  });
+  
+  allPlayers.sort((a,b)=>b.score-a.score);
+  
+  const rankClasses=['r1','r2','r3'];
+  let html='';
+  allPlayers.forEach((p,i)=>{
+    const rc=rankClasses[i]||'';
+    const d=p.delta>0?`<span class="board-delta delta-up">▲${p.delta}</span>`:p.delta<0?`<span class="board-delta delta-dn">▼${Math.abs(p.delta)}</span>`:`<span class="board-delta delta-eq">—</span>`;
+    
+    html+=`<div class="board-row ${p.isMe?'me':''}" onclick="goPage('profile', '${p.name}')">
+      <div class="board-rank ${rc}">${i+1}</div>
+      <div class="board-name">
+        <div class="board-avatar">${p.name[0].toUpperCase()}</div>
+        <div><div class="board-username">${p.name}${p.isMe?' <span style="font-size:.6rem;color:var(--orange)">[YOU]</span>':''}</div><div class="board-tag">${p.tag}</div></div>
+      </div>
+      <div class="board-score">${p.score}</div>
+      <div class="board-flags">${p.flags} / 33</div>
+      <div class="board-last">${p.last}</div>
+      ${d}
+    </div>`;
+  });
+  document.getElementById('board-rows').innerHTML=html;
+  drawChart(allPlayers);
+}
+
+function drawChart(players){
+  const canvas=document.getElementById('score-canvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=canvas.offsetWidth||800;
+  canvas.height=120;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const maxScore=Math.max(...players.map(p=>p.score),1);
+  const W=canvas.width, H=canvas.height, pad=30;
+  ctx.strokeStyle='rgba(255,255,255,.05)';
+  for(let i=0;i<=4;i++){
+    const y=pad+(H-2*pad)*(1-i/4);
+    ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); ctx.stroke();
+  }
+  const barW=Math.min(40,(W-2*pad)/players.length-8);
+  players.forEach((p,i)=>{
+    const x=pad+(W-2*pad)/players.length*i+(W-2*pad)/players.length/2-barW/2;
+    const barH=(p.score/maxScore)*(H-2*pad);
+    const y=H-pad-barH;
+    ctx.fillStyle=p.isMe?'rgba(232,98,42,.8)':'rgba(255,255,255,.12)';
+    ctx.fillRect(x,y,barW,barH);
+    ctx.fillStyle=p.isMe?'#e8622a':'#4a5878';
+    ctx.font='10px Inter, sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(p.name.slice(0,8),x+barW/2,H-pad+12);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ADMIN DASHBOARD
+// ══════════════════════════════════════════════════════════════
+const adminLogs=[];
+function logActivity(msg){ adminLogs.unshift(new Date().toLocaleTimeString()+' — '+msg); if(adminLogs.length>50) adminLogs.pop(); }
+
+let selectedAdminUser = null;
+
+function renderAdmin(){
+  if(currentUser?.role!=='admin' && currentUser?.role!=='super_admin') return;
+  logActivity('Admin panel accessed by '+currentUser.user);
+
+  const allUsers=[...USERS];
+  const totalFlagCaps=CHALLENGES.reduce((sum,c)=>sum+(USERS.some(u=>(u.found || []).includes(c.id))?1:0),0);
+  const avgCompletion=Math.round((totalFlagCaps/CHALLENGES.length)*100)||0;
+
+  document.getElementById('admin-active-users').textContent=allUsers.length;
+  document.getElementById('admin-total-flags').textContent=totalFlagCaps;
+  document.getElementById('admin-completion').textContent=avgCompletion+'%';
+
+  // Show or hide the Super Admin Panel
+  const isSuperAdmin = (currentUser?.role === 'super_admin');
+  const superPanel = document.getElementById('super-admin-panel');
+  if (superPanel) {
+    superPanel.style.display = isSuperAdmin ? 'block' : 'none';
+  }
+
+  const usersHtml=allUsers.map(u=>{
+    const uFound=u.found || [];
+    const uScore=u.score || 0;
+    const uStart=u.startTime || Date.now();
+    const elapsed=Math.floor((Date.now()-uStart)/1000);
+    const h=Math.floor(elapsed/3600), m=Math.floor((elapsed%3600)/60);
+    
+    let displayRole = u.role.toUpperCase();
+    if(u.role === 'super_admin') displayRole = 'SUPER ADMIN';
+    
+    return `<tr>
+      <td><span class="highlight" style="cursor:pointer; text-decoration:underline;" onclick="goPage('profile', '${u.user}')">${u.user}</span></td>
+      <td>${displayRole}</td>
+      <td><strong>${uScore}</strong> pts</td>
+      <td><strong>${uFound.length}</strong>/33</td>
+      <td>${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}</td>
+      <td><span class="${uFound.length>15?'flag-found':'flag-not'}">${uFound.length>0?'ACTIVE':'IDLE'}</span></td>
+      <td><button class="admin-btn" onclick="adminOpenUser('${u.user}')">Manage</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('admin-users-table').innerHTML=usersHtml;
+  document.getElementById('admin-user-edit').style.display='none';
+  document.getElementById('admin-edit-msg').textContent='';
+
+  const chalHtml=CHALLENGES.slice(0,15).map(c=>{
+    const solveCount=USERS.filter(u=>(u.found || []).includes(c.id)).length;
+    const successRate=Math.round((solveCount/allUsers.length)*100)||0;
+    const dm={easy:'Easy',med:'Medium',hard:'Hard',expert:'Expert'};
+    return `<tr><td><span class="highlight">${c.name}</span></td><td>${c.cat}</td><td>${dm[c.diff]}</td><td>${solveCount}/${allUsers.length}</td><td>${successRate}%<div class="challenge-status-bar"><div class="challenge-status-bar-fill" style="width:${successRate}%"></div></div></td><td><span class="${successRate>50?'flag-found':'flag-not'}">${successRate>50?'POPULAR':'PENDING'}</span></td></tr>`;
+  }).join('');
+  document.getElementById('admin-challenges-table').innerHTML=chalHtml+`<tr><td colspan="6" style="text-align:center;padding:12px;color:var(--dim);">Showing 15 of ${CHALLENGES.length} challenges</td></tr>`;
+
+  const flagHeat=CHALLENGES.map((c,i)=>{
+    const found=USERS.some(u=>(u.found || []).includes(c.id));
+    return `<div class="flag-heat-item ${found?'found':''}" title="${c.name}: ${found?'FOUND':'NOT FOUND'}">${i+1}</div>`;
+  }).join('');
+  document.getElementById('admin-flag-heat').innerHTML=flagHeat;
+
+  const logHtml=adminLogs.map(l=>`<div>▶ ${esc(l)}</div>`).join('');
+  document.getElementById('admin-activity-log').innerHTML=logHtml||'<div style="color:var(--dim);">No activity yet</div>';
+}
+
+function adminOpenUser(username){
+  const user=USERS.find(x=>x.user===username);
+  if(!user) return;
+  selectedAdminUser=username;
+  
+  const editPanel = document.getElementById('admin-user-edit');
+  editPanel.style.display='block';
+  document.getElementById('admin-edit-username').textContent=user.user;
+  document.getElementById('admin-edit-special').checked=Boolean(user.is_on_special);
+  document.getElementById('admin-edit-pass').value='';
+  
+  const msg = document.getElementById('admin-edit-msg');
+  msg.textContent='';
+
+  const roleSelect = document.getElementById('admin-edit-role');
+  roleSelect.value=user.role;
+
+  const isSelf = (currentUser?.user === user.user);
+  const isSuperAdmin = (currentUser?.role === 'super_admin');
+  const targetIsAdminOrSuper = (user.role === 'admin' || user.role === 'super_admin');
+  
+  const saveBtn = document.querySelector('#admin-user-edit button[onclick="adminSaveUser()"]');
+  const deleteBtn = document.querySelector('#admin-user-edit button[onclick="adminDeleteUser()"]');
+  
+  roleSelect.disabled = false;
+  document.getElementById('admin-edit-special').disabled = false;
+  document.getElementById('admin-edit-pass').disabled = false;
+  saveBtn.disabled = false;
+  deleteBtn.disabled = false;
+  saveBtn.style.opacity = '1';
+  deleteBtn.style.opacity = '1';
+
+  if (!isSuperAdmin) {
+    const superOpt = roleSelect.querySelector('option[value="super_admin"]');
+    if (superOpt) superOpt.style.display = 'none';
+  } else {
+    const superOpt = roleSelect.querySelector('option[value="super_admin"]');
+    if (superOpt) superOpt.style.display = 'block';
+  }
+
+  if (!isSuperAdmin && targetIsAdminOrSuper && !isSelf) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Access Denied: Regular admins cannot modify admin or super admin accounts.';
+    roleSelect.disabled = true;
+    document.getElementById('admin-edit-special').disabled = true;
+    document.getElementById('admin-edit-pass').disabled = true;
+    saveBtn.disabled = true;
+    deleteBtn.disabled = true;
+    saveBtn.style.opacity = '0.5';
+    deleteBtn.style.opacity = '0.5';
+  }
+}
+
+function adminSaveUser(){
+  if(!selectedAdminUser) return;
+  const user=USERS.find(x=>x.user===selectedAdminUser);
+  if(!user) return;
+  
+  const isSuperAdmin = (currentUser?.role === 'super_admin');
+  const targetIsAdminOrSuper = (user.role === 'admin' || user.role === 'super_admin');
+  if (!isSuperAdmin && targetIsAdminOrSuper && user.user !== currentUser?.user) {
+    alert('Permission Denied: You cannot modify admin/super admin accounts.');
+    return;
+  }
+
+  const role=document.getElementById('admin-edit-role').value;
+  const special=document.getElementById('admin-edit-special').checked;
+  const pass=document.getElementById('admin-edit-pass').value;
+
+  if (role === 'super_admin' && !isSuperAdmin) {
+    alert('Permission Denied: Only super admins can assign the super admin role.');
+    return;
+  }
+
+  user.role=role;
+  user.is_on_special=special;
+  if(pass) user.pass=pass;
+  saveUser(user);
+  document.getElementById('admin-edit-msg').style.color='var(--green)';
+  document.getElementById('admin-edit-msg').textContent='Operator updated successfully.';
+  if(currentUser?.user===user.user){ 
+    currentUser=user; 
+    let roleTag = '';
+    if(currentUser.role==='admin') roleTag = ' [ADMIN]';
+    else if(currentUser.role==='super_admin') roleTag = ' [SUPER ADMIN]';
+    document.getElementById('nav-username').textContent=currentUser.user+roleTag; 
+    if(currentUser.role!=='admin' && currentUser.role!=='super_admin') document.getElementById('nav-admin').style.display='none'; 
+  }
+  logActivity(`Admin updated operator ${user.user}`);
+  renderAdmin();
+}
+
+function adminDeleteUser(){
+  if(!selectedAdminUser) return;
+  if(selectedAdminUser===currentUser?.user){ alert('You cannot delete yourself while logged in.'); return; }
+  
+  const user=USERS.find(x=>x.user===selectedAdminUser);
+  if(!user) return;
+
+  const isSuperAdmin = (currentUser?.role === 'super_admin');
+  const targetIsAdminOrSuper = (user.role === 'admin' || user.role === 'super_admin');
+  if (!isSuperAdmin && targetIsAdminOrSuper) {
+    alert('Permission Denied: You cannot delete admin/super admin accounts.');
+    return;
+  }
+
+  if(!confirm(`Delete operator ${selectedAdminUser}? This cannot be undone.`)) return;
+  
+  CTFDatabase.deleteUser(selectedAdminUser);
+  
+  logActivity(`Admin deleted operator ${selectedAdminUser}`);
+  selectedAdminUser=null;
+  document.getElementById('admin-user-edit').style.display='none';
+  renderAdmin();
+}
+
+function closeAdminUserEdit(){
+  selectedAdminUser=null;
+  document.getElementById('admin-user-edit').style.display='none';
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SUPER ADMIN OPERATIONAL ACTIONS
+// ══════════════════════════════════════════════════════════════
+function superResetDatabase() {
+  if (!confirm("WARNING: This will reset the entire database to default settings and erase all progress of all users. Are you sure?")) return;
+  CTFDatabase.reset();
+  
+  const u = currentUser?.user;
+  const match = USERS.find(x => x.user === u);
+  if (!match) {
+    alert("Database reset. Your temporary user was deleted. Logging out.");
+    currentUser = null; found = []; score = 0; startTime = null;
+    document.getElementById('topnav').style.display='none';
+    document.getElementById('nav-admin').style.display='none';
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-login').classList.add('active');
+  } else {
+    currentUser = match;
+    found = match.found || [];
+    score = match.score || 0;
+    startTime = match.startTime || Date.now();
+    renderAdmin();
+    toast("Database reset to factory defaults.", "green");
+  }
+}
+
+function superToggleFlags() {
+  const flagsWrap = document.getElementById('super-flags-revealed');
+  if (flagsWrap.style.display === 'none') {
+    const listHtml = CHALLENGES.map((c, i) => {
+      return `<div style="margin-bottom:6px; display:flex; justify-content:space-between; border-bottom:1px dashed rgba(255,255,255,.05); padding-bottom:4px;">
+        <span>${i+1}. <strong>${esc(c.name)}</strong> (${esc(c.cat)})</span>
+        <span class="t-flag">${esc(c.flag)}</span>
+      </div>`;
+    }).join('');
+    document.getElementById('super-flags-list').innerHTML = listHtml;
+    flagsWrap.style.display = 'block';
+    logActivity('System flags revealed by super admin');
+  } else {
+    flagsWrap.style.display = 'none';
+  }
+}
+
+function superExportDatabase() {
+  const state = CTFDatabase.getState();
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+  const downloadAnchor = document.createElement('a');
+  downloadAnchor.setAttribute("href", dataStr);
+  downloadAnchor.setAttribute("download", `opsec_ctf_db_backup_${Date.now()}.json`);
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  downloadAnchor.remove();
+  logActivity('Database exported by super admin');
+}
+
+function superImportDatabase(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (!parsed || typeof parsed !== 'object' || !parsed.users) {
+        throw new Error("Invalid database format. Missing 'users' object.");
+      }
+      
+      localStorage.setItem(CTFDatabase.STORAGE_KEY, JSON.stringify(parsed));
+      CTFDatabase.syncToGlobalUsers();
+      
+      if (currentUser) {
+        const match = USERS.find(x => x.user === currentUser.user);
+        if (match) {
+          currentUser = match;
+          found = match.found || [];
+          score = match.score || 0;
+          startTime = match.startTime || Date.now();
+        }
+      }
+      
+      const msg = document.getElementById('super-admin-msg');
+      msg.style.color = 'var(--green)';
+      msg.textContent = 'Database imported successfully! Refreshing dashboard...';
+      logActivity('Database imported by super admin');
+      
+      setTimeout(() => {
+        msg.textContent = '';
+        renderAdmin();
+      }, 1500);
+    } catch(err) {
+      alert("Failed to import database: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function renderLabFlags(){
+  const list=document.getElementById('lab-flags-list');
+  const termChallenges=CHALLENGES.filter(c=>c.cat.startsWith('Linux')||c.cat==='Final Boss');
+  list.innerHTML=termChallenges.map((c,i)=>{
+    const sv=found.includes(c.id);
+    const dm={easy:'dp-easy',med:'dp-med',hard:'dp-hard',expert:'dp-expert'};
+    return `<div class="lab-flag-item ${sv?'found':''}" onclick="setActiveChal('${c.id}')">
+      <div class="lfi-num">${i+1}</div>
+      <div class="lfi-dot"></div>
+      <div class="lfi-name">${c.name}</div>
+      <div class="lfi-pts">${sv?'✓':''} ${c.pts}p</div>
+    </div>`;
+  }).join('');
+}
+
+function setActiveChal(id){
+  activeChalId=id;
+  const c=CHALLENGES.find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('active-chal-name').textContent=c.name;
+  const hb=document.getElementById('term-hint-bar');
+  hb.textContent='Intel: '+c.hint; hb.style.display='block';
+}
+
+function labSubmit(){
+  const val=document.getElementById('lab-flag-input').value.trim();
+  const msg=document.getElementById('lab-submit-msg');
+  const res=checkFlag(val);
+  if(res===true){ msg.textContent='✓ Correct! Flag captured.'; msg.className='ok'; document.getElementById('lab-flag-input').value=''; }
+  else if(res==='dup'){ msg.textContent='Already found.'; msg.className='dup'; }
+  else{ msg.textContent='✗ Incorrect flag.'; msg.className='err'; }
+  setTimeout(()=>msg.textContent='',2500);
+}
+document.getElementById('lab-flag-input').addEventListener('keydown',e=>{ if(e.key==='Enter') labSubmit(); });
+
+// ══════════════════════════════════════════════════════════════
+//  TERMINAL ENGINE
+// ══════════════════════════════════════════════════════════════
+const tout=document.getElementById('term-output');
+function tpr(html){ const d=document.createElement('div'); d.innerHTML=html; tout.appendChild(d); tout.scrollTop=tout.scrollHeight; }
+function tprt(txt,c='t-out'){ tpr(`<span class="${c}">${esc(txt)}</span>`); }
+function tperr(m){ tpr(`<span class="t-err">${esc(m)}</span>`); }
+// Output classes
+const OC={out:'t-out',ok:'t-ok',err:'t-err',dim:'t-dim',dir:'t-dir',exe:'t-exe',link:'t-link'};
+// Inline styles for terminal
+const termCSS=`
+<style>
+.t-out{color:#b8c8de}.t-ok{color:#e8622a}.t-err{color:#e03535}
+.t-dim{color:#333}.t-dir{color:#5b8fff}.t-exe{color:#2db37a;font-weight:700}
+.t-link{color:#b44fff}.t-cmd{color:#666}.t-ps1{color:#e8622a}
+.t-flag{color:#e8622a;font-weight:700;text-shadow:0 0 8px rgba(232,98,42,.4)}
+</style>`;
+tout.insertAdjacentHTML('beforebegin',termCSS);
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function res(p){
+  if(!p||p==='~') return '/home/operator';
+  if(p.startsWith('~/')) p='/home/operator'+p.slice(1);
+  if(!p.startsWith('/')) p=(cwd==='/'?'/':cwd+'/')+p;
+  const parts=p.split('/').filter(Boolean),stack=[];
+  for(const pt of parts){ if(pt==='.') continue; if(pt==='..') stack.pop(); else stack.push(pt); }
+  return '/'+stack.join('/');
+}
+function fsnode(p){ return FS[res(p)]||null; }
+function colorEntry(name,n){
+  if(!n) return esc(name);
+  if(n.type==='dir') return `<span class="t-dir">${esc(name)}/</span>`;
+  if(n.type==='symlink') return `<span class="t-link">${esc(name)} -> ${esc(n.target)}</span>`;
+  if(n.perms?.includes('x')) return `<span class="t-exe">${esc(name)}</span>`;
+  if(name.startsWith('.')) return `<span class="t-dim">${esc(name)}</span>`;
+  return `<span class="t-out">${esc(name)}</span>`;
+}
+
+function runCmd(raw){
+  const input=raw.trim(); if(!input) return;
+  cmdHist.unshift(input); histIdx=-1;
+  const toks=input.split(/\s+/),cmd=toks[0],args=toks.slice(1);
+  tpr(`<span class="t-ps1">${esc(ps1())}</span><span class="t-cmd"> ${esc(input)}</span>`);
+  if(input.includes('|')){ pipeCmd(input); autoDetect(); updatePs1(); return; }
+  switch(cmd){
+    case 'ls':      cmdLs(args); break;
+    case 'cd':      cmdCd(args); break;
+    case 'cat':     cmdCat(args); break;
+    case 'head':    cmdHead(args); break;
+    case 'tail':    cmdTail(args); break;
+    case 'find':    cmdFind(args,input); break;
+    case 'grep':    cmdGrep(args,input); break;
+    case 'awk':     cmdAwk(args,input); break;
+    case 'cut':     cmdCut(args,input); break;
+    case 'wc':      cmdWc(args); break;
+    case 'rev':     cmdRev(args); break;
+    case 'base64':  cmdB64(args); break;
+    case 'xxd':     cmdXxd(args); break;
+    case 'strings': cmdStrings(args); break;
+    case 'tr':      cmdTr(args,input); break;
+    case 'python3':
+    case 'python':  cmdPython(args); break;
+    case 'curl':    cmdCurl(args); break;
+    case 'wget':    tprt('[simulated: file downloaded]'); break;
+    case 'pwd':     tprt(cwd); break;
+    case 'whoami':  tprt('root'); break;
+    case 'id':      tprt('uid=0(root) gid=0(root) groups=0(root)'); break;
+    case 'hostname':tprt('opsec-ctf'); break;
+    case 'uname':   tprt(args.includes('-a')?'Linux opsec-ctf 6.1.0-kali9-amd64 #1 SMP PREEMPT Debian x86_64 GNU/Linux':'Linux'); break;
+    case 'date':    tprt(new Date().toString()); break;
+    case 'clear':   tout.innerHTML=''; break;
+    case 'history': tpr(cmdHist.slice().reverse().map((c,i)=>`<span class="t-out"> ${String(i+1).padStart(4)} ${esc(c)}</span>`).join('\n')); break;
+    case 'env':     tpr('<span class="t-out">PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\nHOME=/home/operator\nUSER=operator\nSHELL=/bin/bash\nDEPLOY_KEY=FLAG{3xp0rt_v4r_l34k3d}</span>'); break;
+    case 'ps':      tpr('<span class="t-out">  PID TTY      TIME CMD\n    1 ?    00:00:01 systemd\n  900 ?    00:00:00 sshd\n 1234 pts/0 00:00:00 bash\n 1300 pts/0 00:00:00 ps</span>'); break;
+    case 'ss':      tpr('<span class="t-out">Netid  State   Local:Port\ntcp    LISTEN  0.0.0.0:22\ntcp    LISTEN  0.0.0.0:80\ntcp    LISTEN  127.0.0.1:3306</span>'); break;
+    case 'ip':
+      if(args[0]==='a'||args[0]==='addr') tprt('2: eth0: inet 10.0.0.50/24\n3: lo: inet 127.0.0.1/8');
+      else tperr('ip: unknown subcommand'); break;
+    case 'echo':    tprt(args.join(' ')); break;
+    case 'mkdir':   args.filter(a=>!a.startsWith('-')).forEach(d=>{ const p=res(d); FS[p]={type:'dir',children:[]}; const par=p.substring(0,p.lastIndexOf('/'))||'/'; const n=p.split('/').pop(); if(FS[par]?.children&&!FS[par].children.includes(n)) FS[par].children.push(n); }); break;
+    case 'touch':   args.forEach(f=>{ const p=res(f); if(!FS[p]){ FS[p]={type:'file',content:''}; const par=p.substring(0,p.lastIndexOf('/'))||'/'; const n=p.split('/').pop(); if(FS[par]?.children) FS[par].children.push(n); } }); break;
+    case 'rm':      tprt('[simulated: removed]'); break;
+    case 'cp':      tprt('[simulated: copied]'); break;
+    case 'mv':      tprt('[simulated: moved]'); break;
+    case 'chmod':   tprt('[simulated: permissions changed]'); break;
+    case 'sudo':    tprt('[simulated: running as root]'); break;
+    case 'stat':    cmdStat(args); break;
+    case 'file':    cmdFile(args); break;
+    case 'which':   cmdWhich(args); break;
+    case 'less':
+    case 'more':    cmdCat(args); break;
+    case 'tar':     cmdTar(args); break;
+    case 'man':     tprt(`man ${args[0]||'?'}: use --help or online docs`); break;
+    case 'help':    cmdHelp(); break;
+    default:        tperr(`bash: ${esc(cmd)}: command not found`);
+  }
+  autoDetect();
+  updatePs1();
+}
+
+// ── Individual commands ───────────────────────────────────
+function cmdLs(args){
+  const ha=args.some(a=>a.startsWith('-')&&a.includes('a'));
+  const la=args.some(a=>a.startsWith('-')&&a.includes('l'));
+  const target=args.find(a=>!a.startsWith('-'))||cwd;
+  const p=res(target),n=fsnode(p);
+  if(!n){ tperr(`ls: cannot access '${target}': No such file or directory`); return; }
+  if(n.type==='file'){ tpr(colorEntry(p.split('/').pop(),n)); return; }
+  let ch=(n.children||[]).slice();
+  if(!ha) ch=ch.filter(c=>!c.startsWith('.'));
+  if(!ch.length) return;
+  const lines=ch.map(name=>{
+    const cp=p==='/'?'/'+name:p+'/'+name,cn=FS[cp];
+    if(la){
+      const pm=cn?(cn.perms||(cn.type==='dir'?'drwxr-xr-x':'-rw-r--r--')):'-rw-r--r--';
+      const ow=cn?.owner||'root';
+      const sz=cn?.type==='file'?(cn.content||'').length:4096;
+      return `<span class="t-out">${pm} 1 ${ow} ${ow} ${String(sz).padStart(7)} Jan 20 10:23 ${colorEntry(name,cn)}</span>`;
+    }
+    return colorEntry(name,cn);
+  });
+  tpr(la?lines.join('\n'):lines.join('  '));
+}
+
+function cmdCd(args){
+  const t=args[0]||'/home/operator',p=res(t),n=fsnode(p);
+  if(!n){ tperr(`bash: cd: ${t}: No such file or directory`); return; }
+  if(n.type!=='dir'){ tperr(`bash: cd: ${t}: Not a directory`); return; }
+  cwd=p;
+}
+
+function cmdCat(args){
+  const files=args.filter(a=>!a.startsWith('-'));
+  if(!files.length){ tperr('cat: missing operand'); return; }
+  files.forEach(f=>{
+    const p=res(f),n=fsnode(p);
+    if(!n){ tperr(`cat: ${f}: No such file or directory`); return; }
+    if(n.type==='dir'){ tperr(`cat: ${f}: Is a directory`); return; }
+    if(n.type==='symlink'){
+      const tn=FS[n.target];
+      if(tn?.type==='file') tpr(`<span class="t-out">${esc(tn.content||'')}</span>`);
+      else tperr(`cat: ${f}: broken symlink`);
+      return;
+    }
+    if((n.content||'').startsWith('Permission denied')){ tperr(n.content); return; }
+    // Highlight flags in output
+    const c=esc(n.content||'').replace(/FLAG\{[^}]+\}/g,m=>`<span class="t-flag">${m}</span>`);
+    tpr(`<span class="t-out">${c}</span>`);
+  });
+}
+
+function cmdHead(args){
+  const ni=args.indexOf('-n'),n=ni>-1?parseInt(args[ni+1])||10:10;
+  const f=args.find(a=>!a.startsWith('-')&&isNaN(parseInt(a)));
+  if(!f){ tperr('head: missing file'); return; }
+  const nd=fsnode(res(f));
+  if(!nd||nd.type==='dir'){ tperr(`head: ${f}: No such file`); return; }
+  tpr(`<span class="t-out">${esc((nd.content||'').split('\n').slice(0,n).join('\n'))}</span>`);
+}
+
+function cmdTail(args){
+  const ni=args.indexOf('-n'),n=ni>-1?parseInt(args[ni+1])||10:10;
+  const f=args.find(a=>!a.startsWith('-')&&isNaN(parseInt(a)));
+  if(!f){ tperr('tail: missing file'); return; }
+  const nd=fsnode(res(f));
+  if(!nd||nd.type==='dir'){ tperr(`tail: ${f}: No such file`); return; }
+  const c=esc((nd.content||'').split('\n').slice(-n).join('\n')).replace(/FLAG\{[^}]+\}/g,m=>`<span class="t-flag">${m}</span>`);
+  tpr(`<span class="t-out">${c}</span>`);
+}
+
+function cmdFind(args, raw){
+  const ni=args.indexOf('-name'),pat=ni>-1?args[ni+1]:null;
+  const ti=args.indexOf('-type'),tf=ti>-1?args[ti+1]:null;
+  const pi=args.indexOf('-perm'),pv=pi>-1?args[pi+1]:null;
+  const newI=args.indexOf('-newer');
+  let startP=args.find(a=>!a.startsWith('-')&&!['name','type','perm','newer','readable','mtime'].includes(a))||cwd;
+  if(startP.startsWith('-')) startP=cwd;
+  if(pv&&(pv.includes('4000')||pv==='-4000')){
+    const suid=Object.entries(FS).filter(([p,n])=>n.type==='file'&&(n.perms||'').includes('s')).map(([p])=>p);
+    tpr(['<span class="t-out">/usr/bin/passwd\n/usr/bin/sudo\n/bin/su\n/usr/bin/pkexec\n'+(suid.join('\n'))]
+      .join('').replace(/FLAG\{[^}]+\}/g,m=>`<span class="t-flag">${m}</span>`));
+    return;
+  }
+  if(newI>-1){ tpr('<span class="t-out">/var/log/latest_evidence.log\n/tmp/xf3r_9k2.dat</span>'); return; }
+  if(pv==='777'||pv==='-0002'){
+    const ww=Object.entries(FS).filter(([p,n])=>n.type==='file'&&(n.perms||'').includes('rwxrwxrwx')).map(([p])=>p);
+    tpr((ww.length?ww:'[none found]').toString()); return;
+  }
+  const base=res(startP),results=[];
+  function walk(p){
+    const n=FS[p]; if(!n) return;
+    const name=p.split('/').pop();
+    let ok=true;
+    if(pat){ const re=new RegExp('^'+pat.replace(/\*/g,'.*').replace(/\?/g,'.')+'$'); ok=ok&&re.test(name); }
+    if(tf) ok=ok&&((tf==='f'&&n.type==='file')||(tf==='d'&&n.type==='dir'));
+    if(ok) results.push(p);
+    if(n.type==='dir'&&n.children) n.children.forEach(c=>walk(p==='/'?'/'+c:p+'/'+c));
+  }
+  walk(base);
+  if(results.length) tpr(results.map(r=>`<span class="t-out">${esc(r)}</span>`).join('\n'));
+}
+
+function cmdGrep(args,raw){
+  if(raw.includes('|')){ pipeCmd(raw); return; }
+  const flags=args.filter(a=>a.startsWith('-'));
+  const nf=args.filter(a=>!a.startsWith('-'));
+  if(nf.length<2){ tperr('grep: usage: grep [flags] PATTERN FILE'); return; }
+  const pat=nf[0].replace(/['"]/g,'');
+  const files=nf.slice(1);
+  const rec=flags.includes('-r')||flags.includes('-R');
+  const ci=flags.includes('-i');
+  const fps=rec?Object.keys(FS).filter(p=>FS[p].type==='file'):files.map(f=>res(f));
+  const results=[];
+  fps.forEach(fp=>{
+    const n=FS[fp]; if(!n||n.type!=='file') return;
+    (n.content||'').split('\n').forEach((line,i)=>{
+      const re=new RegExp(pat.replace(/[.*+?^${}()|[\]\\]/g,(m)=>m==='*'?'.*':'\\'+m),ci?'i':'');
+      if(re.test(line)){
+        const pref=(rec||files.length>1)?`<span style="color:var(--teal)">${esc(fp)}:</span>`:'';
+        const lp=flags.includes('-n')?`<span style="color:var(--yellow)">${i+1}:</span>`:'';
+        const lc=esc(line).replace(/FLAG\{[^}]+\}/g,m=>`<span class="t-flag">${m}</span>`);
+        results.push(pref+lp+`<span class="t-out">${lc}</span>`);
+      }
+    });
+  });
+  if(results.length) tpr(results.join('\n'));
+}
+
+function cmdAwk(args,raw){
+  if(raw.includes('|')){ pipeCmd(raw); return; }
+  const fi=args.indexOf('-F'),sep=fi>-1?args[fi+1].replace(/['"]/g,''):' ';
+  const fA=args[args.length-1];
+  if(!fA||fA.startsWith("'")||fA.startsWith('"')){ tprt('[awk: specify a file or use a pipe]'); return; }
+  const n=fsnode(res(fA));
+  if(!n||n.type==='dir'){ tperr(`awk: ${fA}: No such file`); return; }
+  const prog=args.find(a=>a.includes('print'))||'{print}';
+  const condM=prog.match(/\$(\d+)==["']?([^"'\{]+)["']?\{/);
+  const flds=(prog.match(/\$(\d+)/g)||[]);
+  (n.content||'').split('\n').forEach(line=>{
+    const fs2=line.split(sep===' '?/\s+/:new RegExp(sep.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+    if(condM){ const ci2=parseInt(condM[1])-1; if(fs2[ci2]!==condM[2].trim()) return; }
+    const out=flds.length?flds.map(f=>fs2[parseInt(f.slice(1))-1]||'').join(' '):line;
+    const oc=esc(out).replace(/FLAG\{[^}]+\}/g,m=>`<span class="t-flag">${m}</span>`);
+    tpr(`<span class="t-out">${oc}</span>`);
+  });
+}
+
+function cmdCut(args,raw){
+  if(raw.includes('|')){ pipeCmd(raw); return; }
+  const di=args.indexOf('-d'),sep=di>-1?args[di+1].replace(/['"]/g,''):'\t';
+  const fli=args.indexOf('-f'),fi=fli>-1?parseInt(args[fli+1])-1:0;
+  const fA=args.find(a=>!a.startsWith('-')&&a!==sep&&isNaN(parseInt(a)));
+  if(!fA){ tperr('cut: missing file'); return; }
+  const n=fsnode(res(fA));
+  if(!n||n.type==='dir'){ tperr(`cut: ${fA}: No such file`); return; }
+  (n.content||'').split('\n').forEach(l=>tpr(`<span class="t-out">${esc(l.split(sep)[fi]||'')}</span>`));
+}
+
+function cmdWc(args){
+  const f=args.find(a=>!a.startsWith('-'));
+  if(!f){ tperr('wc: missing file'); return; }
+  const n=fsnode(res(f));
+  if(!n||n.type==='dir'){ tperr(`wc: ${f}: No such file`); return; }
+  const c=n.content||'';
+  tprt(`${c.split('\n').length} ${c.split(/\s+/).filter(Boolean).length} ${c.length} ${f}`);
+}
+
+function cmdRev(args){
+  const f=args.find(a=>!a.startsWith('-'));
+  if(!f){ tperr('rev: missing file'); return; }
+  const n=fsnode(res(f));
+  if(!n||n.type==='dir'){ tperr(`rev: ${f}: No such file`); return; }
+  (n.content||'').split('\n').forEach(l=>{
+    const r=esc(l.split('').reverse().join('')).replace(/FLAG\{[^}]+\}/g,m=>`<span class="t-flag">${m}</span>`);
+    tpr(`<span class="t-out">${r}</span>`);
+  });
+}
+
+function cmdB64(args){
+  const dec=args.includes('-d');
+  const f=args.find(a=>!a.startsWith('-'));
+  if(!f){ tperr('base64: missing file'); return; }
+  const n=fsnode(res(f));
+  if(!n||n.type==='dir'){ tperr(`base64: ${f}: No such file`); return; }
+  if(dec){
+    try{
+      const result=atob((n.content||'').trim().split('\n')[0]);
+      const rc=esc(result).replace(/FLAG\{[^}]+\}/g,m=>`<span class="t-flag">${m}</span>`);
+      tpr(`<span class="t-out">${rc}</span>`);
+    }catch(e){ tperr('base64: invalid encoded data'); }
+  } else tprt(btoa(n.content||''));
+}
+
+function cmdXxd(args){
+  const rp=args.includes('-r')&&args.includes('-p');
+  const f=args.find(a=>!a.startsWith('-'));
+  if(!f){ tperr('xxd: missing file'); return; }
+  const n=fsnode(res(f));
+  if(!n||n.type==='dir'){ tperr(`xxd: ${f}: No such file`); return; }
+  if(rp){
+    const hex=(n.content||'').replace(/\s/g,'').replace(/[^0-9a-fA-F]/g,'');
+    try{
+      const bytes=hex.match(/.{1,2}/g)||[];
+      const result=bytes.map(b=>String.fromCharCode(parseInt(b,16))).join('');
+      const rc=esc(result).replace(/FLAG\{[^}]+\}/g,m=>`<span class="t-flag">${m}</span>`);
+      tpr(`<span class="t-out">${rc}</span>`);
+    }catch(e){ tperr('xxd: decode error'); }
+  } else {
+    const c=(n.content||'').slice(0,48);
+    let out='00000000: ';
+    for(let i=0;i<c.length;i++) out+=c.charCodeAt(i).toString(16).padStart(2,'0')+' ';
+    tprt(out);
+  }
+}
+
+function cmdStrings(args){
+  const f=args.find(a=>!a.startsWith('-'));
+  if(!f){ tperr('strings: missing file'); return; }
+  const n=fsnode(res(f));
+  if(!n||n.type==='dir'){ tperr(`strings: ${f}: No such file`); return; }
+  const matches=(n.content||'').match(/[\x20-\x7E]{4,}/g)||[];
+  const out=matches.map(s=>esc(s).replace(/FLAG\{[^}]+\}/g,m=>`<span class="t-flag">${m}</span>`));
+  if(out.length) tpr(out.map(s=>`<span class="t-out">${s}</span>`).join('\n'));
+}
+
+function cmdTr(args,raw){
+  if(raw.includes('|')){ pipeCmd(raw); return; }
+  const sets=args.filter(a=>!a.startsWith('-'));
+  const fA=args[args.length-1];
+  const n=fsnode(res(fA));
+  if(!n||n.type==='dir'){ tprt('[tr: pipe input required, e.g. cat file | tr a-z n-za-m]'); return; }
+  if(sets.length>=2){
+    const from=sets[0].replace(/['"]/g,''),to=sets[1].replace(/['"]/g,'');
+    const expand=s=>{ let r=''; for(let i=0;i<s.length;i++){ if(s[i+1]==='-'&&s[i+2]){const a=s.charCodeAt(i),b=s.charCodeAt(i+2);for(let c=a;c<=b;c++)r+=String.fromCharCode(c);i+=2;}else r+=s[i];} return r; };
+    const fe=expand(from),te=expand(to);
+    const result=(n.content||'').split('').map(c=>{ const i=fe.indexOf(c); return i>-1?(te[i]||c):c; }).join('');
+    const rc=esc(result).replace(/FLAG\{[^}]+\}/g,m=>`<span class="t-flag">${m}</span>`);
+    tpr(`<span class="t-out">${rc}</span>`);
+  }
+}
+
+function cmdPython(args){
+  const ci=args.indexOf('-c');
+  if(ci>-1){
+    const code=args.slice(ci+1).join(' ').replace(/^['"]|['"]$/g,'');
+    if(code.includes('fromhex')){
+      const hm=code.match(/fromhex\(['"]([\da-fA-F]+)['"]\)/);
+      if(hm){
+        try{
+          const bytes=hm[1].match(/.{2}/g)||[];
+          const result=bytes.map(b=>String.fromCharCode(parseInt(b,16))).join('');
+          const rc=esc(result).replace(/FLAG\{[^}]+\}/g,m=>`<span class="t-flag">${m}</span>`);
+          tpr(`<span class="t-out">${rc}</span>`);
+        }catch(e){ tperr('python3: invalid hex'); }
+      } else tprt('[python3: hex decode simulated — wrap hex in quotes]');
+    } else if(code.includes('print')){
+      tprt('[python3: '+code.slice(0,60)+']');
+    } else tprt('[python3: simulated]');
+  } else tprt('[python3: interactive mode not supported — use -c]');
+}
+
+function cmdCurl(args){
+  const url=args.find(a=>!a.startsWith('-'))||'';
+  const headers=args.includes('-I')||args.includes('-i');
+  if(url.includes('/api/v1/debug')||url==='debug'){
+    tpr(`<span class="t-out">HTTP/1.1 200 OK\nContent-Type: application/json\n\n{\n  "status": "debug",\n  "version": "3.1.0",\n  "flag": "<span class="t-flag">FLAG{4p1_d3bug_3ndp01nt}</span>",\n  "uptime": 86400\n}</span>`);
+  } else if(headers){
+    tpr(`<span class="t-out">HTTP/1.1 200 OK\nContent-Type: text/html\nX-Powered-By: DEEBUG-CTF/3.1\nX-Flag: <span class="t-flag">FLAG{h3ad3r_1nj3ct10n}</span>\nContent-Length: 4096\nConnection: keep-alive</span>`);
+} else tpr(`<span class="t-out">HTTP/1.1 200 OK\n\n&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;body&gt;DEEBUG CTF&lt;/body&gt;&lt;/html&gt;</span>`);
+}
+
+function cmdStat(args){
+  const f=args[0]; if(!f){ tperr('stat: missing operand'); return; }
+  const p=res(f),n=fsnode(p);
+  if(!n){ tperr(`stat: ${f}: No such file or directory`); return; }
+  const pm=n.perms||(n.type==='dir'?'drwxr-xr-x':'-rw-r--r--');
+  tprt(`  File: ${p}\n  Type: ${n.type}\n  Size: ${(n.content||'').length}\nAccess: ${pm}\nModify: 2024-01-20 10:23:01`);
+}
+function cmdFile(args){
+  const f=args[0]; if(!f){ tperr('file: missing operand'); return; }
+  const p=res(f),n=fsnode(p);
+  if(!n){ tperr(`file: ${f}: No such file or directory`); return; }
+  let t=n.type==='dir'?'directory':'ASCII text';
+  if(p.endsWith('.sh')) t='Bourne-Again shell script, ASCII text executable';
+  if(p.endsWith('.py')) t='Python script';
+  if(p.endsWith('.gz')) t='gzip compressed data';
+  if(p.endsWith('.elf')||p.endsWith('.elf')||p.includes('agent')) t='ELF 64-bit LSB executable';
+  tprt(`${p}: ${t}`);
+}
+function cmdWhich(args){
+  const b={bash:'/bin/bash',python3:'/usr/bin/python3',find:'/usr/bin/find',grep:'/usr/bin/grep',awk:'/usr/bin/awk',sed:'/usr/bin/sed',curl:'/usr/bin/curl',base64:'/usr/bin/base64',xxd:'/usr/bin/xxd',strings:'/usr/bin/strings',rev:'/usr/bin/rev',tr:'/usr/bin/tr',nmap:'/usr/bin/nmap'};
+  args.forEach(a=>tpr(b[a]?`<span class="t-out">${b[a]}</span>`:`<span class="t-err">${esc(a)}: not found</span>`));
+}
+function cmdTar(args){
+  const f=args.find(a=>a.endsWith('.gz')||a.endsWith('.tar'));
+  if(!f){ tprt('tar: specify archive file'); return; }
+  const n=fsnode(res(f)); if(!n){ tperr(`tar: ${f}: No such file`); return; }
+  tpr(`<span class="t-out">${esc(n.content||'[empty archive]')}</span>`);
+}
+function cmdHelp(){
+  tpr(`<span class="t-ok">DEEBUG CTF — Terminal Commands</span>
+<span class="t-out">Navigation:  ls [-la] [path]   cd [path]   pwd</span>
+<span class="t-out">Files:       cat   head -n N   tail -n N   file   stat   wc</span>
+<span class="t-out">Search:      find / -name "*.txt" 2>/dev/null</span>
+<span class="t-out">             find / -perm -4000 2>/dev/null   (SUID)</span>
+<span class="t-out">             find / -perm 777 2>/dev/null     (world-writable)</span>
+<span class="t-out">             find / -newer /etc/hostname 2>/dev/null</span>
+<span class="t-out">Grep:        grep "pattern" file   grep -r "pattern" /dir</span>
+<span class="t-out">Text:        awk -F, '\\$2=="X"{print \\$6}' file   cut -d, -f6 file</span>
+<span class="t-out">Decode:      base64 -d file   rev file   xxd -r -p file</span>
+<span class="t-out">             cat file | tr 'a-zA-Z' 'n-za-mN-ZA-M'  (ROT13)</span>
+<span class="t-out">             python3 -c "print(bytes.fromhex('hexstring').decode())"</span>
+<span class="t-out">Network:     curl /api/v1/debug   curl -I http://localhost</span>
+<span class="t-out">System:      whoami   id   ps   ss   env   history   uname -a</span>
+<span class="t-out">Other:       strings file   tar xzf archive.tar.gz   clear   help</span>`);
+}
+
+// ── Pipe engine ───────────────────────────────────────────
+function pipeCmd(raw){
+  const segs=raw.split('|').map(s=>s.trim());
+  let content='';
+  const first=segs[0].split(/\s+/),fcmd=first[0],fargs=first.slice(1);
+  if(fcmd==='cat'){
+    const f=fargs.find(a=>!a.startsWith('-'));
+    if(f){ const n=fsnode(res(f)); content=n?(n.type==='symlink'?(FS[n.target]?.content||''):(n.content||'')):'';}
+  } else if(fcmd==='echo') content=fargs.join(' ').replace(/['"]/g,'');
+  else if(fcmd==='find'){
+    const walk=(p,acc=[])=>{ const n=FS[p]; if(!n)return acc; acc.push(p); if(n.type==='dir'&&n.children)n.children.forEach(c=>walk(p==='/'?'/'+c:p+'/'+c,acc)); return acc; };
+    const sp=fargs.find(a=>!a.startsWith('-'))||cwd;
+    content=walk(res(sp)).join('\n');
+  }
+
+  for(let i=1;i<segs.length;i++){
+    const seg=segs[i].split(/\s+/),scmd=seg[0],sargs=seg.slice(1);
+    if(scmd==='grep'){
+      const flags=sargs.filter(a=>a.startsWith('-'));
+      const pat=(sargs.find(a=>!a.startsWith('-'))||'').replace(/['"]/g,'');
+      const ci=flags.includes('-i'),ln=flags.includes('-n');
+      const re=new RegExp(pat.replace(/[.*+?^${}()|[\]\\]/g,(m)=>m==='*'?'.*':'\\'+m),ci?'i':'');
+      content=content.split('\n').filter(l=>re.test(l)).join('\n');
+    } else if(scmd==='tr'){
+      const sets=sargs.filter(a=>!a.startsWith('-'));
+      if(sets.length>=2){
+        const from=sets[0].replace(/['"]/g,''),to=sets[1].replace(/['"]/g,'');
+        const expand=s=>{ let r=''; for(let i=0;i<s.length;i++){ if(s[i+1]==='-'&&s[i+2]){const a=s.charCodeAt(i),b=s.charCodeAt(i+2);for(let c=a;c<=b;c++)r+=String.fromCharCode(c);i+=2;}else r+=s[i];} return r; };
+        const fe=expand(from),te=expand(to);
+        content=content.split('').map(c=>{ const i=fe.indexOf(c); return i>-1?(te[i]||c):c; }).join('');
+      }
+    } else if(scmd==='base64'){
+      if(sargs.includes('-d')){ try{ content=atob(content.trim()); }catch(e){ content='[invalid base64]'; } }
+      else content=btoa(content);
+    } else if(scmd==='rev'){ content=content.split('\n').map(l=>l.split('').reverse().join('')).join('\n'); }
+    else if(scmd==='sort'){ content=content.split('\n').sort().join('\n'); }
+    else if(scmd==='uniq'){ const ls=content.split('\n'); content=ls.filter((l,i)=>l!==ls[i-1]).join('\n'); }
+    else if(scmd==='head'){ const n=parseInt(sargs.find(a=>!a.startsWith('-')))||10; content=content.split('\n').slice(0,n).join('\n'); }
+    else if(scmd==='tail'){ const n=parseInt(sargs.find(a=>!a.startsWith('-')))||10; content=content.split('\n').slice(-n).join('\n'); }
+    else if(scmd==='wc'){ const ls=content.split('\n'); content=`${ls.length} ${content.split(/\s+/).filter(Boolean).length} ${content.length}`; }
+    else if(scmd==='awk'){
+      const fi=sargs.indexOf('-F'),sep=fi>-1?sargs[fi+1].replace(/['"]/g,''):' ';
+      const prog=sargs.find(a=>a.includes('print'))||'{print}';
+      const condM=prog.match(/\$(\d+)==["']?([^"'\{]+)["']?\{/);
+      const flds=(prog.match(/\$(\d+)/g)||[]);
+      content=content.split('\n').map(line=>{
+        const fs2=line.split(sep===' '?/\s+/:new RegExp(sep.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+        if(condM){ const ci2=parseInt(condM[1])-1; if(fs2[ci2]!==condM[2].trim()) return null; }
+        return flds.length?flds.map(f=>fs2[parseInt(f.slice(1))-1]||'').join(' '):line;
+      }).filter(l=>l!==null).join('\n');
+    }
+  }
+  if(content){
+    const out=esc(content).replace(/FLAG\{[^}]+\}/g,m=>`<span class="t-flag">${m}</span>`);
+    tpr(`<span class="t-out">${out}</span>`);
+  }
+}
+
+// ── Auto-detect flags in output ───────────────────────────
+function autoDetect(){
+  const divs=tout.querySelectorAll('div');
+  const recent=Array.from(divs).slice(-10).map(d=>d.textContent).join('\n');
+  const matches=[...recent.matchAll(/FLAG\{[^}]+\}/g)].map(m=>m[0]);
+  matches.forEach(f=>{ const c=CHALLENGES.find(x=>x.flag===f); if(c&&!found.includes(c.id)) awardFlag(c.id); });
+}
+
+// ── Prompt ────────────────────────────────────────────────
+function ps1(){ const d=cwd==='/home/operator'?'~':cwd; return `root@deebug:${d}#`; }
+function updatePs1(){
+  const d=cwd==='/home/operator'?'~':cwd;
+  document.getElementById('term-ps1').textContent=`root@deebug:${d}# `;
+  document.getElementById('term-titlelabel').textContent=`root@deebug-ctf: ${d}`;
+}
+
+// ── Input ─────────────────────────────────────────────────
+const ti=document.getElementById('term-input');
+ti.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ const v=ti.value; ti.value=''; runCmd(v); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); if(histIdx<cmdHist.length-1){ histIdx++; ti.value=cmdHist[histIdx]; } }
+  else if(e.key==='ArrowDown'){ e.preventDefault(); if(histIdx>0){ histIdx--; ti.value=cmdHist[histIdx]; }else{ histIdx=-1; ti.value=''; } }
+  else if(e.key==='Tab'){
+    e.preventDefault();
+    const parts=ti.value.split(' '),last=parts[parts.length-1];
+    if(!last) return;
+    const dir=last.includes('/')?res(last.substring(0,last.lastIndexOf('/')+1)):cwd;
+    const n=FS[dir]; if(!n?.children) return;
+    const pref=last.split('/').pop();
+    const m=n.children.filter(c=>c.startsWith(pref));
+    if(m.length===1){ parts[parts.length-1]=(last.includes('/')?last.substring(0,last.lastIndexOf('/')+1):'')+m[0]; ti.value=parts.join(' '); }
+    else if(m.length>1) tpr(`<span class="t-out">${m.join('  ')}</span>`);
+  }
+});
+document.getElementById('lab-terminal').addEventListener('click',()=>ti.focus());
+
+// ══════════════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════════════
+function saveProgress(){
+  if(!currentUser) return;
+  const u=currentUser.user;
+  localStorage.setItem('opsec_found_'+u,JSON.stringify(found));
+  localStorage.setItem('opsec_score_'+u,score);
+}
+function updateNavScore(){
+  document.getElementById('nav-score-badge').textContent=score+' pts';
+}
+function getRank(){
+  const allScores = USERS.map(u => u.score || 0).sort((a,b)=>b-a);
+  return allScores.indexOf(score)+1;
+}
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className=type==='green'?'t-green':type==='red'?'t-red':'';
+  t.style.display='block';
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.style.display='none',3500);
+}
+
+// Timer
+let timerInterval;
+function startTimer(){
+  clearInterval(timerInterval);
+  timerInterval=setInterval(()=>{
+    const elapsed=Math.floor((Date.now()-startTime)/1000);
+    const h=Math.floor(elapsed/3600),m=Math.floor((elapsed%3600)/60);
+    document.getElementById('ds-time').textContent=
+      `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  },10000);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  LOGIN PAGE DECORATIONS
+// ══════════════════════════════════════════════════════════════
+(function buildMatrix(){
+  const container=document.getElementById('matrix-bg');
+  const chars='01アイウエオカキクケコサシスセソタチツテトナニヌネノ!@#$%^&*()';
+  for(let i=0;i<20;i++){
+    const col=document.createElement('div');
+    col.className='matrix-col';
+    col.style.left=(i*5+2)+'%';
+    col.style.animationDuration=(8+Math.random()*12)+'s';
+    col.style.animationDelay=(-Math.random()*10)+'s';
+    let text='';
+    for(let j=0;j<80;j++) text+=chars[Math.floor(Math.random()*chars.length)]+'\n';
+    col.textContent=text;
+    container.appendChild(col);
+  }
+})();
+
+// ══════════════════════════════════════════════════════════════
+//  TERMINAL BOOT MESSAGE
+// ══════════════════════════════════════════════════════════════
+(function bootMsg(){
+  tpr(`<span class="t-dim">┌─────────────────────────────────────────────────────┐</span>
+<span class="t-dim">│</span>  <span class="t-ok">DEEBUG CTF Terminal v3.1</span>                              <span class="t-dim">│</span>
+<span class="t-dim">│</span>  <span class="t-out">33 flags hidden across this platform.</span>                <span class="t-dim">│</span>
+<span class="t-dim">│</span>  <span class="t-out">Flags auto-capture when displayed in terminal.</span>        <span class="t-dim">│</span>
+<span class="t-dim">│</span>  <span class="t-out">Submit manually using the sidebar.</span>                   <span class="t-dim">│</span>
+<span class="t-dim">└─────────────────────────────────────────────────────┘</span>
+<span class="t-dim">Type <span style="color:var(--orange)">help</span> for commands. Use <span style="color:var(--orange)">↑↓</span> for history. <span style="color:var(--orange)">Tab</span> to complete.</span>`);
+})();
+</script>
+</body>
+</html>

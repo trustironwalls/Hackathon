@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KaliLab CTF — 30 Flags</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080b10;--bg2:#0d1117;--bg3:#131920;--bg4:#1a2232;
+  --border:#1e2d3d;--border2:#243447;
+  --green:#39ff14;--green2:#00c853;--green3:rgba(57,255,20,.08);
+  --blue:#00b4ff;--purple:#b44fff;--red:#ff3d3d;--yellow:#ffe74c;--orange:#ff9500;
+  --text:#8ba3bc;--white:#d4e1ee;--muted:#3d5268;
+  --font:'Share Tech Mono',monospace;--ui:'Rajdhani',sans-serif;
+  --r:4px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg)}
+body{font-family:var(--font);color:var(--text);display:flex;flex-direction:column}
+
+/* scanline overlay */
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);pointer-events:none;z-index:999}
+
+/* ── TOPBAR ── */
+#topbar{
+  background:var(--bg2);border-bottom:2px solid var(--green);
+  height:46px;display:flex;align-items:center;padding:0 16px;gap:14px;flex-shrink:0;
+  position:relative;
+}
+#topbar::after{content:'';position:absolute;bottom:-4px;left:0;right:0;height:2px;background:var(--green);opacity:.2;filter:blur(4px)}
+.logo{font-family:var(--ui);font-weight:700;font-size:1.15rem;color:var(--green);letter-spacing:.04em}
+.logo span{color:var(--blue)}
+.logo sub{font-size:.6rem;color:var(--muted);vertical-align:super;margin-left:4px}
+.divv{width:1px;height:22px;background:var(--border2)}
+#score-display{font-family:var(--ui);font-size:.85rem;color:var(--text)}
+#score-display strong{color:var(--green);font-size:1rem}
+#flag-counter{font-family:var(--ui);font-size:.8rem;color:var(--muted)}
+#flag-counter span{color:var(--yellow)}
+.spacer{flex:1}
+#timer-display{font-family:var(--ui);font-size:.95rem;color:var(--orange);letter-spacing:.06em}
+.tbtn{font-family:var(--ui);font-size:.75rem;font-weight:600;letter-spacing:.04em;padding:5px 12px;border-radius:var(--r);cursor:pointer;border:none;transition:all .15s}
+.tbtn-outline{background:transparent;color:var(--muted);border:1px solid var(--border2)}
+.tbtn-outline:hover{color:var(--green);border-color:var(--green)}
+.tbtn-green{background:var(--green);color:#000}
+.tbtn-green:hover{background:#5fff30}
+.tbtn-red{background:rgba(255,61,61,.15);color:var(--red);border:1px solid var(--red)}
+
+/* ── LAYOUT ── */
+#layout{flex:1;display:flex;overflow:hidden}
+
+/* ── LEFT PANEL ── */
+#left{width:280px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+#left-tabs{display:flex;border-bottom:1px solid var(--border)}
+.ltab{flex:1;padding:9px 4px;text-align:center;font-family:var(--ui);font-size:.72rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.ltab.active{color:var(--green);border-bottom-color:var(--green)}
+.ltab:hover:not(.active){color:var(--text)}
+.lpanel{flex:1;overflow-y:auto;display:none}
+.lpanel.active{display:block}
+
+/* flag list */
+.flag-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 14px;border-bottom:1px solid var(--border);
+  cursor:pointer;transition:background .1s;
+}
+.flag-item:hover{background:var(--bg3)}
+.flag-item.found{background:rgba(57,255,20,.04)}
+.flag-num{font-size:.7rem;color:var(--muted);width:22px;flex-shrink:0;font-family:var(--ui)}
+.flag-name{flex:1;font-size:.78rem;color:var(--text);line-height:1.3}
+.flag-item.found .flag-name{color:var(--green)}
+.flag-pts{font-family:var(--ui);font-size:.68rem;color:var(--muted);flex-shrink:0}
+.flag-item.found .flag-pts{color:var(--green2)}
+.flag-tick{font-size:.75rem;color:var(--muted);flex-shrink:0}
+.flag-item.found .flag-tick{color:var(--green)}
+.flag-diff{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.d-easy{background:var(--green2)}.d-med{background:var(--yellow)}.d-hard{background:var(--orange)}.d-expert{background:var(--red)}
+
+/* categories */
+.cat-heading{padding:8px 14px 4px;font-family:var(--ui);font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);border-bottom:1px solid var(--border)}
+
+/* scoreboard */
+.sb-row{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border);font-size:.78rem}
+.sb-rank{font-family:var(--ui);font-weight:700;color:var(--muted);width:20px}
+.sb-name{flex:1;color:var(--text)}
+.sb-score{font-family:var(--ui);color:var(--green);font-size:.82rem}
+
+/* ── MAIN ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── FLAG SUBMIT BAR ── */
+#submit-bar{
+  background:var(--bg3);border-bottom:1px solid var(--border);
+  padding:8px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+#flag-input{
+  flex:1;background:var(--bg);border:1px solid var(--border2);
+  border-radius:var(--r);color:var(--green);font-family:var(--font);
+  font-size:.85rem;padding:7px 12px;outline:none;transition:border-color .15s;
+  letter-spacing:.04em;
+}
+#flag-input::placeholder{color:var(--muted);letter-spacing:0}
+#flag-input:focus{border-color:var(--green);box-shadow:0 0 8px rgba(57,255,20,.15)}
+#submit-msg{font-family:var(--ui);font-size:.75rem;min-width:160px;text-align:right}
+#submit-msg.ok{color:var(--green)}
+#submit-msg.err{color:var(--red)}
+#submit-msg.dup{color:var(--yellow)}
+
+/* ── TERMINAL ── */
+#term-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#000;position:relative}
+#term-glow{position:absolute;inset:0;background:radial-gradient(ellipse 80% 40% at 50% 100%,rgba(57,255,20,.04),transparent);pointer-events:none}
+#term-bar{
+  background:#0a0a0a;border-bottom:1px solid #1a1a1a;
+  padding:6px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;
+}
+.tdot{width:10px;height:10px;border-radius:50%}
+.tdot-r{background:#ff5f57}.tdot-y{background:#ffbd2e}.tdot-g{background:#28ca41}
+#term-title-label{font-family:var(--ui);font-size:.72rem;color:#444;flex:1;text-align:center;letter-spacing:.04em}
+#term-out{flex:1;overflow-y:auto;padding:12px 16px;font-size:.84rem;line-height:1.75;white-space:pre-wrap;word-break:break-all}
+#term-in-row{display:flex;align-items:center;padding:8px 16px;border-top:1px solid #111;gap:6px;flex-shrink:0}
+#term-prompt-label{color:var(--green);white-space:nowrap;font-size:.84rem;flex-shrink:0}
+#term-input{flex:1;background:transparent;border:none;outline:none;color:var(--white);font-family:var(--font);font-size:.84rem;caret-color:var(--green)}
+
+/* ── OUTPUT COLORS ── */
+.tc{color:#aaa}.to{color:var(--text)}.terr{color:var(--red)}.tok{color:var(--green)}
+.tdir{color:var(--blue)}.texe{color:var(--green);font-weight:600}.tlink{color:var(--purple)}
+.tmut{color:#333}.tyel{color:var(--yellow)}.tora{color:var(--orange)}
+
+/* ── MODAL ── */
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;align-items:center;justify-content:center;padding:20px}
+#modal.show{display:flex}
+#mbox{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);max-width:520px;width:100%;padding:26px;animation:pop .18s ease}
+@keyframes pop{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+#mbox h2{font-family:var(--ui);font-size:1rem;font-weight:700;color:var(--white);margin-bottom:10px}
+#mbox p,#mbox li{font-size:.82rem;line-height:1.8;color:var(--text)}
+#mbox ul{padding-left:18px;margin-bottom:10px}
+#mbox .mfooter{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+
+/* ── TOAST ── */
+#toast{
+  display:none;position:fixed;bottom:20px;right:20px;z-index:600;
+  background:var(--bg2);border:1px solid var(--green);
+  padding:12px 18px;border-radius:var(--r);
+  font-family:var(--ui);font-size:.85rem;color:var(--green);
+  box-shadow:0 0 20px rgba(57,255,20,.25);
+  animation:slideup .25s ease;
+}
+#toast.err-toast{border-color:var(--red);color:var(--red);box-shadow:0 0 20px rgba(255,61,61,.2)}
+@keyframes slideup{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div class="logo">Kali<span>Lab</span><sub>CTF</sub></div>
+  <div class="divv"></div>
+  <div id="score-display">Score: <strong id="score-val">0</strong></div>
+  <div id="flag-counter">Flags: <span id="flag-val">0</span> / 30</div>
+  <div class="divv"></div>
+  <div id="timer-display" id="timer-display">00:00:00</div>
+  <div class="spacer"></div>
+  <button class="tbtn tbtn-outline" onclick="showHelp()">? Help</button>
+  <button class="tbtn tbtn-outline" onclick="showCheat()">Cheatsheet</button>
+  <button class="tbtn tbtn-red" onclick="confirmReset()">Reset</button>
+</div>
+
+<!-- LAYOUT -->
+<div id="layout">
+
+  <!-- LEFT PANEL -->
+  <div id="left">
+    <div id="left-tabs">
+      <div class="ltab active" onclick="switchTab('flags',this)">Flags</div>
+      <div class="ltab" onclick="switchTab('hints',this)">Hints</div>
+      <div class="ltab" onclick="switchTab('board',this)">Board</div>
+    </div>
+    <div class="lpanel active" id="tab-flags"></div>
+    <div class="lpanel" id="tab-hints" style="padding:14px;font-size:.78rem;line-height:1.9;color:var(--text)">
+      <div style="color:var(--green);font-family:var(--ui);font-size:.8rem;font-weight:700;margin-bottom:10px">GENERAL HINTS</div>
+      <p style="margin-bottom:8px">Flags always look like: <span style="color:var(--yellow)">FLAG{some_text_here}</span></p>
+      <p style="margin-bottom:8px">This lab has a full simulated Kali Linux filesystem. Explore every directory, especially hidden ones.</p>
+      <p style="margin-bottom:8px">Useful starting points:</p>
+      <ul style="padding-left:16px;margin-bottom:8px">
+        <li>Always <span style="color:var(--green)">ls -la</span> — never just ls</li>
+        <li>Check <span style="color:var(--green)">/etc</span>, <span style="color:var(--green)">/var</span>, <span style="color:var(--green)">/opt</span>, <span style="color:var(--green)">/tmp</span></li>
+        <li>Read dotfiles: <span style="color:var(--green)">.bashrc .bash_history .profile</span></li>
+        <li>Some flags are encoded — try <span style="color:var(--green)">base64 -d</span>, <span style="color:var(--green)">rev</span>, <span style="color:var(--green)">tr</span></li>
+        <li>Use <span style="color:var(--green)">find / -name "*.txt" 2>/dev/null</span> to enumerate</li>
+        <li>grep is your best friend for big files</li>
+        <li>Some flags require combining output from multiple files</li>
+      </ul>
+      <p style="color:var(--muted);font-size:.72rem">Click a flag in the Flags tab for a specific hint.</p>
+    </div>
+    <div class="lpanel" id="tab-board">
+      <div id="board-list"></div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- SUBMIT BAR -->
+    <div id="submit-bar">
+      <span style="font-family:var(--ui);font-size:.72rem;color:var(--muted);white-space:nowrap;letter-spacing:.06em;text-transform:uppercase">Submit Flag</span>
+      <input id="flag-input" type="text" placeholder="FLAG{...}" autocomplete="off" spellcheck="false">
+      <button class="tbtn tbtn-green" onclick="submitFlag()">Submit</button>
+      <div id="submit-msg"></div>
+    </div>
+
+    <!-- TERMINAL -->
+    <div id="term-wrap">
+      <div id="term-glow"></div>
+      <div id="term-bar">
+        <div class="tdot tdot-r"></div>
+        <div class="tdot tdot-y"></div>
+        <div class="tdot tdot-g"></div>
+        <div id="term-title-label">root@kali: ~</div>
+      </div>
+      <div id="term-out"></div>
+      <div id="term-in-row">
+        <div id="term-prompt-label">root@kali:~# </div>
+        <input id="term-input" type="text" autocomplete="off" spellcheck="false" placeholder="type a command...">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal">
+  <div id="mbox">
+    <h2 id="mtitle"></h2>
+    <div id="mbody"></div>
+    <div class="mfooter"><button class="tbtn tbtn-outline" onclick="closeModal()">Close</button></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+'use strict';
+// ══════════════════════════════════════════════════════
+//  FLAG DEFINITIONS  (30 flags)
+// ══════════════════════════════════════════════════════
+const FLAGS = [
+  // BEGINNER ───────────────────────────────────────────
+  {id:1,  cat:'Beginner',  pts:50,  diff:'easy',
+   name:'The Dotfile',
+   hint:'Hidden files start with a dot. Use ls -la in /home/kali and look for a file called .flag',
+   check: s => s.trim()==='FLAG{d0tf1l3s_4r3_h1dd3n}'},
+  {id:2,  cat:'Beginner',  pts:50,  diff:'easy',
+   name:'Read the Manual',
+   hint:'cat /etc/motd — the message of the day holds a surprise',
+   check: s => s.trim()==='FLAG{w3lc0m3_t0_th3_l4b}'},
+  {id:3,  cat:'Beginner',  pts:75,  diff:'easy',
+   name:'Who Are You?',
+   hint:'The /etc/passwd file stores user info. One of the GECOS comment fields (field 5) hides a flag.',
+   check: s => s.trim()==='FLAG{p4sswd_f1eld_h1dd3n}'},
+  {id:4,  cat:'Beginner',  pts:75,  diff:'easy',
+   name:'Root\'s Home',
+   hint:'Navigate to /root and list everything including hidden files.',
+   check: s => s.trim()==='FLAG{r00t_h0m3_3xpl0r3d}'},
+  {id:5,  cat:'Beginner',  pts:100, diff:'easy',
+   name:'End of File',
+   hint:'The file /var/log/syslog is very long. The flag is on the very last line. Use tail.',
+   check: s => s.trim()==='FLAG{t41l_th3_l0g}'},
+  // INTERMEDIATE ───────────────────────────────────────
+  {id:6,  cat:'Intermediate', pts:125, diff:'med',
+   name:'Encoded Secret',
+   hint:'cat /home/kali/.secret — the content looks like base64. Decode it with: echo "<content>" | base64 -d',
+   check: s => s.trim()==='FLAG{b4s364_d3c0d3d}'},
+  {id:7,  cat:'Intermediate', pts:125, diff:'med',
+   name:'Log Hunter',
+   hint:'There are 1000 lines in /var/log/app.log. Use grep to search for the word "trophy" in it.',
+   check: s => s.trim()==='FLAG{gr3p_n33dl3_h4yst4ck}'},
+  {id:8,  cat:'Intermediate', pts:125, diff:'med',
+   name:'Field Work',
+   hint:'cat /opt/data/agents.csv — it is a CSV file. Use awk -F, to extract field 6 from the line where field 2 is "PHANTOM".',
+   check: s => s.trim()==='FLAG{4wk_f1eld_m4st3r}'},
+  {id:9,  cat:'Intermediate', pts:150, diff:'med',
+   name:'Split Personality',
+   hint:'There are two files: /home/kali/.flag_part1 and /home/kali/.flag_part2. Combine them: cat part1 part2 (no space between).',
+   check: s => s.trim()==='FLAG{sp1lt_fl4g_r3un1t3d}'},
+  {id:10, cat:'Intermediate', pts:150, diff:'med',
+   name:'Backwards',
+   hint:'cat /opt/hidden/reversed.txt — the content is the flag written backwards. Use the rev command to flip it.',
+   check: s => s.trim()==='FLAG{r3v3rs3d_str1ng}'},
+  {id:11, cat:'Intermediate', pts:150, diff:'med',
+   name:'Deep Rabbit Hole',
+   hint:'There is a directory nested 8 levels deep starting at /opt/rabbit. Keep using ls and cd or use find.',
+   check: s => s.trim()==='FLAG{d33p_d1r_tr4v3rs4l}'},
+  {id:12, cat:'Intermediate', pts:175, diff:'med',
+   name:'Environment',
+   hint:'cat /home/kali/.bashrc — look for an export statement that contains a flag value.',
+   check: s => s.trim()==='FLAG{3nv_v4r_l34k3d}'},
+  // ADVANCED ───────────────────────────────────────────
+  {id:13, cat:'Advanced', pts:200, diff:'hard',
+   name:'Hex Decoder',
+   hint:'cat /opt/encoded/hexflag.txt — it is a hex string. Decode it with: echo "<hex>" | xxd -r -p  OR use python3 -c "print(bytes.fromhex(\'<hex>\').decode())"',
+   check: s => s.trim()==='FLAG{h3x_d3c0d3d_pr0}'},
+  {id:14, cat:'Advanced', pts:200, diff:'hard',
+   name:'ROT13',
+   hint:'cat /opt/encoded/rot13flag.txt — the flag is ROT13 encoded. Decode with: cat file | tr a-zA-Z n-za-mN-ZA-M',
+   check: s => s.trim()==='FLAG{r0t13_c1ph3r_cr4ck3d}'},
+  {id:15, cat:'Advanced', pts:200, diff:'hard',
+   name:'Cron Confession',
+   hint:'cat /etc/crontab — find the script that runs every minute. Read that script file.',
+   check: s => s.trim()==='FLAG{cr0n_sc r1pt_r34d3r}'.replace(' ','')},
+  {id:16, cat:'Advanced', pts:225, diff:'hard',
+   name:'Archive Heist',
+   hint:'There is a file /opt/archive/vault.tar.gz. Extract it. Inside is another archive. Keep extracting until you find the flag.',
+   check: s => s.trim()==='FLAG{n3st3d_4rch1v3_cr4ck3d}'},
+  {id:17, cat:'Advanced', pts:225, diff:'hard',
+   name:'Strings Hunt',
+   hint:'cat /opt/binary/firmware.bin — it looks like garbage, but grep for FLAG{ inside it.',
+   check: s => s.trim()==='FLAG{str1ngs_1n_b1n4ry}'},
+  {id:18, cat:'Advanced', pts:225, diff:'hard',
+   name:'Three-Part Flag',
+   hint:'Find three files: /opt/fragments/frag_a, frag_b, frag_c. Concatenate all three with cat in order.',
+   check: s => s.trim()==='FLAG{thr33_p4rts_0n3_fl4g}'},
+  {id:19, cat:'Advanced', pts:250, diff:'hard',
+   name:'Auth Log Grep',
+   hint:'grep through /var/log/auth.log for lines containing the word "CLASSIFIED" — the flag is embedded there.',
+   check: s => s.trim()==='FLAG{4uth_l0g_s3cr3t}'},
+  {id:20, cat:'Advanced', pts:250, diff:'hard',
+   name:'Symlink Chase',
+   hint:'ls -la /opt/links/ — one of the symlinks points somewhere unusual. Follow it.',
+   check: s => s.trim()==='FLAG{syml1nk_ch4s3d}'},
+  // EXPERT ─────────────────────────────────────────────
+  {id:21, cat:'Expert', pts:300, diff:'expert',
+   name:'Sudo Clue',
+   hint:'cat /etc/sudoers — one allowed command points to a script. Read that script carefully.',
+   check: s => s.trim()==='FLAG{sud0_pr1v_3sc_v3ct0r}'},
+  {id:22, cat:'Expert', pts:300, diff:'expert',
+   name:'Find the Newest',
+   hint:'Use find /var -type f -newer /etc/hostname 2>/dev/null — the most recently modified file hides a flag.',
+   check: s => s.trim()==='FLAG{f1nd_n3w3st_f1l3}'},
+  {id:23, cat:'Expert', pts:300, diff:'expert',
+   name:'World Writable',
+   hint:'Find world-writable files: find / -perm -0002 -type f 2>/dev/null — one of them contains a flag.',
+   check: s => s.trim()==='FLAG{w0rld_wr1t4bl3_f0und}'},
+  {id:24, cat:'Expert', pts:325, diff:'expert',
+   name:'Biggest File',
+   hint:'Use find /opt -type f 2>/dev/null | xargs wc -c 2>/dev/null | sort -n — the largest file contains a flag near the bottom.',
+   check: s => s.trim()==='FLAG{l4rg3st_f1l3_w1ns}'},
+  {id:25, cat:'Expert', pts:325, diff:'expert',
+   name:'Encoded Filename',
+   hint:'ls /opt/filenames/ — one filename is base64 encoded. Decode the filename itself (not contents) to get the flag.',
+   check: s => s.trim()==='FLAG{f1l3n4m3_w4s_3nc0d3d}'},
+  {id:26, cat:'Expert', pts:350, diff:'expert',
+   name:'Temp Evidence',
+   hint:'find /tmp -name "*.dat" 2>/dev/null — there is a randomly-named .dat file. cat it.',
+   check: s => s.trim()==='FLAG{tmp_3v1d3nc3_f0und}'},
+  {id:27, cat:'Expert', pts:350, diff:'expert',
+   name:'Here Document',
+   hint:'cat /opt/scripts/deploy.sh — the script uses a heredoc (<<EOF). Read every line carefully.',
+   check: s => s.trim()==='FLAG{h3r3d0c_s3cr3t}'},
+  {id:28, cat:'Expert', pts:375, diff:'expert',
+   name:'Recursive Grep',
+   hint:'grep -r "MASTER_KEY" /opt/config/ 2>/dev/null — the flag is buried in a config file inside a subdirectory.',
+   check: s => s.trim()==='FLAG{r3curs1v3_gr3p_m4st3r}'},
+  {id:29, cat:'Expert', pts:400, diff:'expert',
+   name:'Proc Secrets',
+   hint:'cat /proc/flag — this fake proc file holds a flag.',
+   check: s => s.trim()==='FLAG{pr0c_f1l3_s3cr3t}'},
+  {id:30, cat:'Expert', pts:500, diff:'expert',
+   name:'THE FINAL FLAG',
+   hint:'Three files exist: /opt/final/piece_one, /opt/final/piece_two, /opt/final/piece_three. Each piece contains a ROT13 encoded segment. Decode each, then concatenate in order.',
+   check: s => s.trim()==='FLAG{m4st3r_0f_k4l1_l1nux}'},
+];
+
+// ══════════════════════════════════════════════════════
+//  VIRTUAL FILESYSTEM
+// ══════════════════════════════════════════════════════
+const FS = {
+  '/':{ type:'dir', children:['home','root','etc','var','opt','tmp','proc','bin','usr','sbin','dev'] },
+
+  // /home
+  '/home':{ type:'dir', children:['kali'] },
+  '/home/kali':{ type:'dir', children:['Desktop','Documents','Downloads','.bashrc','.bash_history','.profile','.flag','.secret','.flag_part1','.flag_part2','.ssh','.config'] },
+  '/home/kali/.flag':{ type:'file', content:'FLAG{d0tf1l3s_4r3_h1dd3n}' },                         // flag 1
+  '/home/kali/.secret':{ type:'file', content:'RkxBR3tiNHMzNjRfZDNjMGQzZH0=' },                    // flag 6 base64
+  '/home/kali/.flag_part1':{ type:'file', content:'FLAG{sp1lt_fl4g' },                              // flag 9 part1
+  '/home/kali/.flag_part2':{ type:'file', content:'_r3un1t3d}' },                                   // flag 9 part2
+  '/home/kali/.bashrc':{ type:'file', content:'# ~/.bashrc\nexport PATH=$PATH:/usr/local/bin\nalias ll="ls -la"\nalias grep="grep --color=auto"\n\n# Application secrets (TODO: move to vault)\nexport SECRET_KEY="FLAG{3nv_v4r_l34k3d}"\nexport DB_PASS="n0t_th3_fl4g_s0rry"\nexport API_TOKEN="4lso_n0t_1t"' }, // flag 12
+  '/home/kali/.bash_history':{ type:'file', content:'whoami\nid\nls -la\ncd /etc\ncat passwd\nnmap 192.168.1.0/24\nsudo -l\nfind / -perm -4000 2>/dev/null\ngrep -r "password" /var/www\ncat /root/.bashrc\nhistory' },
+  '/home/kali/.profile':{ type:'file', content:'# ~/.profile\n# executed by the command interpreter for login shells\nif [ -f ~/.bashrc ]; then\n  . ~/.bashrc\nfi\n# PATH update\nexport PATH=$PATH:$HOME/.local/bin' },
+  '/home/kali/.ssh':{ type:'dir', children:['id_rsa','id_rsa.pub','known_hosts','authorized_keys'] },
+  '/home/kali/.ssh/id_rsa':{ type:'file', content:'-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA0Z3VS5JJcds3xHn/ygWep4PE5HB2+5LFwFqrR5QD/4PXKFT\n[REDACTED FOR SECURITY]\n-----END RSA PRIVATE KEY-----', perms:'-rw-------' },
+  '/home/kali/.ssh/id_rsa.pub':{ type:'file', content:'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDRndVLkklx2zfEef/KBZ6ng8TkcHb7ksXAWqtHlAP/g9coVNe kali@kali' },
+  '/home/kali/.ssh/known_hosts':{ type:'file', content:'192.168.1.1 ssh-rsa AAAAB3NzaC1yc2EAA...\n10.10.10.10 ssh-rsa AAAAB3NzaC1yc2EBB...' },
+  '/home/kali/.ssh/authorized_keys':{ type:'file', content:'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDRndVL... attacker@evil.com' },
+  '/home/kali/.config':{ type:'dir', children:['notes.txt'] },
+  '/home/kali/.config/notes.txt':{ type:'file', content:'TODO:\n- Update nmap scripts\n- Check cron jobs for priv esc\n- Review /opt/config/ for hardcoded creds\n- Ask admin about /opt/binary/ files' },
+  '/home/kali/Desktop':{ type:'dir', children:['README.txt','scan.sh','targets.txt'] },
+  '/home/kali/Desktop/README.txt':{ type:'file', content:'Welcome to the CTF lab.\nYour goal: find all 30 flags hidden in this filesystem.\nGood luck. You will need it.' },
+  '/home/kali/Desktop/scan.sh':{ type:'file', content:'#!/bin/bash\n# Quick recon script\nTARGET=$1\necho "[*] Scanning $TARGET"\nnmap -sV -sC -oN scan_$TARGET.txt $TARGET\necho "[*] Done"', perms:'-rwxr-xr-x' },
+  '/home/kali/Desktop/targets.txt':{ type:'file', content:'10.10.10.1\n10.10.10.2\n10.10.10.3\n192.168.56.101' },
+  '/home/kali/Documents':{ type:'dir', children:['recon','loot','notes.md'] },
+  '/home/kali/Documents/recon':{ type:'dir', children:['nmap_results.txt','gobuster.txt'] },
+  '/home/kali/Documents/recon/nmap_results.txt':{ type:'file', content:'Nmap 7.94 scan report for 10.10.10.1\nHost is up (0.021s latency).\nPORT    STATE SERVICE VERSION\n22/tcp  open  ssh     OpenSSH 8.9\n80/tcp  open  http    Apache 2.4.52\n443/tcp open  https   Apache 2.4.52\n3306/tcp open mysql   MySQL 8.0.30\n\nNmap done: 1 IP address (1 host up)' },
+  '/home/kali/Documents/recon/gobuster.txt':{ type:'file', content:'/admin (Status: 301)\n/backup (Status: 200)\n/config (Status: 403)\n/login (Status: 200)\n/uploads (Status: 200)\n/wp-admin (Status: 301)' },
+  '/home/kali/Documents/loot':{ type:'dir', children:['hashes.txt','creds.txt'] },
+  '/home/kali/Documents/loot/hashes.txt':{ type:'file', content:'admin:$6$salt$hashhash...\nroot:$6$salt$hashhash...\nweb:$6$salt$hashhash...' },
+  '/home/kali/Documents/loot/creds.txt':{ type:'file', content:'# Credentials found\nFTP: ftp:ftp\nSSH: admin:P@ssw0rd123\nWeb: admin:admin123' },
+  '/home/kali/Documents/notes.md':{ type:'file', content:'# Pentest Notes\n## Phase 1 - Recon\n- Scanned 10.10.10.0/24\n- Found 3 live hosts\n## Phase 2 - Exploitation\n- Exploited CVE-2023-1234\n## Phase 3 - Post-Exploitation\n- Lateral movement via SSH keys' },
+  '/home/kali/Downloads':{ type:'dir', children:['tools','wordlists'] },
+  '/home/kali/Downloads/tools':{ type:'dir', children:['linpeas.sh','pspy64','chisel'] },
+  '/home/kali/Downloads/tools/linpeas.sh':{ type:'file', content:'#!/bin/bash\n# LInux Privilege Escalation Awesome Script\n# https://github.com/carlospolop/PEASS-ng\necho "[*] Starting linpeas..."', perms:'-rwxr-xr-x' },
+  '/home/kali/Downloads/wordlists':{ type:'dir', children:['rockyou_small.txt','common_passwords.txt'] },
+  '/home/kali/Downloads/wordlists/common_passwords.txt':{ type:'file', content:'password\n123456\nadmin\nletmein\nqwerty\npassword123\nadmin123\nwelcome' },
+
+  // /root
+  '/root':{ type:'dir', children:['.bashrc','.bash_history','proof.txt','.secret_notes','.flag_root'] },
+  '/root/.flag_root':{ type:'file', content:'FLAG{r00t_h0m3_3xpl0r3d}', perms:'-rw-------' },      // flag 4
+  '/root/proof.txt':{ type:'file', content:'You have root access.\nMachine pwned!\n\nSubmit this flag: FLAG{r00t_h0m3_3xpl0r3d}', perms:'-rw-------' },
+  '/root/.bashrc':{ type:'file', content:'# root .bashrc\nexport PATH=$PATH:/usr/local/sbin\nalias ll="ls -la"\n# reminder: vault password is in /opt/config/vault.conf' },
+  '/root/.bash_history':{ type:'file', content:'whoami\ncat /etc/shadow\npasswd kali\nfind / -writable -type f 2>/dev/null\ncrontab -e\ncat /opt/config/vault.conf\nsystemctl status apache2' },
+  '/root/.secret_notes':{ type:'file', content:'Personal notes — do not share\n\nServer IPs:\n- 10.10.10.1 (web)\n- 10.10.10.2 (db)\n- 10.10.10.3 (backup)\n\nAdmin portal: https://admin.internal:8443\nCredentials: admin / Sup3rS3cr3t!', perms:'-rw-------' },
+
+  // /etc
+  '/etc':{ type:'dir', children:['passwd','shadow','hosts','hostname','crontab','sudoers','motd','os-release','environment','ssh','cron.d'] },
+  '/etc/motd':{ type:'file', content:'\n  ██╗  ██╗ █████╗ ██╗     ██╗\n  ██║ ██╔╝██╔══██╗██║     ██║\n  █████╔╝ ███████║██║     ██║\n  ██╔═██╗ ██╔══██║██║     ██║\n  ██║  ██╗██║  ██║███████╗██║\n\nFLAG{w3lc0m3_t0_th3_l4b}\n\nAuthorised access only.\n' }, // flag 2
+  '/etc/passwd':{ type:'file', content:'root:x:0:0:root:/root:/bin/bash\ndaemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\nbin:x:2:2:bin:/bin:/usr/sbin/nologin\nkali:x:1000:1000:FLAG{p4sswd_f1eld_h1dd3n}:/home/kali:/bin/bash\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin\npostgres:x:110:118:PostgreSQL administrator:/var/lib/postgresql:/bin/bash\nredis:x:111:119:Redis Server:/var/lib/redis:/usr/sbin/nologin\nsshd:x:103:65534::/run/sshd:/usr/sbin/nologin' }, // flag 3 in GECOS
+  '/etc/shadow':{ type:'file', content:'cat: /etc/shadow: Permission denied', perms:'-rw-r-----', owner:'root' },
+  '/etc/hosts':{ type:'file', content:'127.0.0.1   localhost\n127.0.1.1   kali\n::1         localhost ip6-localhost\n10.10.10.1  web.lab\n10.10.10.2  db.lab\n10.10.10.3  backup.lab\n192.168.1.1 router.local' },
+  '/etc/hostname':{ type:'file', content:'kali' },
+  '/etc/crontab':{ type:'file', content:'# /etc/crontab: system-wide crontab\nSHELL=/bin/sh\nPATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin\n\n# m  h  dom  mon  dow  user       command\n* *   *   *   *   root  /opt/scripts/minute_task.sh\n*/5 * *   *   *   root  /opt/scripts/backup.sh\n0 2  *   *   *   root  /opt/scripts/cleanup.sh\n0 0  *   *  0   root  /opt/scripts/weekly_report.sh' },
+  '/etc/sudoers':{ type:'file', content:'# sudoers - do not edit manually, use visudo\nDefaults env_reset\nDefaults mail_badpass\n\nroot    ALL=(ALL:ALL) ALL\n\n# Allow kali to run specific tools without password\nkali    ALL=(ALL) NOPASSWD: /usr/bin/find\nkali    ALL=(ALL) NOPASSWD: /opt/scripts/privesc_check.sh\n\n%sudo   ALL=(ALL:ALL) ALL', perms:'-r--r-----' },
+  '/etc/environment':{ type:'file', content:'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"\nLANG="en_US.UTF-8"\nSYSTEM_TOKEN="n0t_4_fl4g_just_4_t0k3n"' },
+  '/etc/os-release':{ type:'file', content:'PRETTY_NAME="Kali GNU/Linux Rolling"\nNAME="Kali GNU/Linux"\nID=kali\nID_LIKE=debian\nVERSION="2024.1"\nVERSION_ID="2024.1"\nHOME_URL="https://www.kali.org/"' },
+  '/etc/ssh':{ type:'dir', children:['sshd_config','ssh_host_rsa_key.pub'] },
+  '/etc/ssh/sshd_config':{ type:'file', content:'Port 22\nPermitRootLogin yes\nPasswordAuthentication yes\nPubkeyAuthentication yes\nAuthorizedKeysFile .ssh/authorized_keys\n# TODO: disable root login before going live' },
+  '/etc/cron.d':{ type:'dir', children:['apt-compat','php'] },
+
+  // /var
+  '/var':{ type:'dir', children:['log','www','tmp','backups','mail'] },
+  '/var/log':{ type:'dir', children:['syslog','auth.log','app.log','dpkg.log','apache2','kern.log'] },
+  '/var/log/syslog':{ type:'file', content:(()=>{
+    let lines = [];
+    for(let i=1;i<=300;i++) lines.push(`Jan 15 ${String(Math.floor(i/60)%24).padStart(2,'0')}:${String(i%60).padStart(2,'0')}:00 kali systemd[1]: [INFO] heartbeat ok`);
+    for(let i=301;i<=600;i++) lines.push(`Jan 15 ${String(Math.floor(i/60)%24).padStart(2,'0')}:${String(i%60).padStart(2,'0')}:01 kali kernel: [${i}.000] routine check passed`);
+    for(let i=601;i<=899;i++) lines.push(`Jan 15 ${String(Math.floor(i/60)%24).padStart(2,'0')}:${String(i%60).padStart(2,'0')}:02 kali cron[900]: (root) CMD (/opt/scripts/backup.sh)`);
+    lines.push('Jan 15 23:59:59 kali systemd[1]: FLAG{t41l_th3_l0g}');  // flag 5 — very last line
+    return lines.join('\n');
+  })() },
+  '/var/log/auth.log':{ type:'file', content:(()=>{
+    let lines = ['Jan 15 10:22:01 kali sshd[900]: Server listening on 0.0.0.0 port 22'];
+    for(let i=0;i<50;i++) lines.push(`Jan 15 10:${String(i).padStart(2,'0')}:11 kali sshd[${900+i}]: Accepted password for kali from 192.168.1.${10+i} port ${40000+i}`);
+    lines.push('Jan 15 10:55:01 kali sudo[1337]: CLASSIFIED operation: FLAG{4uth_l0g_s3cr3t} executed by root'); // flag 19
+    for(let i=0;i<30;i++) lines.push(`Jan 15 11:${String(i).padStart(2,'0')}:00 kali su[${1000+i}]: FAILED su for root by kali`);
+    lines.push('Jan 15 11:59:59 kali sshd[999]: Disconnected from 10.10.10.1');
+    return lines.join('\n');
+  })() },
+  '/var/log/app.log':{ type:'file', content:(()=>{
+    let lines = [];
+    const words = ['DEBUG','INFO','WARN','ERROR'];
+    for(let i=1;i<=500;i++) lines.push(`[${words[i%4]}] ${new Date(2024,0,15,Math.floor(i/60)%24,i%60).toTimeString().slice(0,8)} req_id=${i} user=user${i%20} endpoint=/api/v1/data status=${i%3===0?500:200} ms=${10+i%90}`);
+    lines.push('[INFO] 08:42:17 req_id=501 TROPHY_HUNTER token=FLAG{gr3p_n33dl3_h4yst4ck} status=200');  // flag 7
+    for(let i=502;i<=1000;i++) lines.push(`[${words[i%4]}] ${new Date(2024,0,15,Math.floor(i/60)%24,i%60).toTimeString().slice(0,8)} req_id=${i} user=user${i%20} status=${i%5===0?403:200}`);
+    return lines.join('\n');
+  })() },
+  '/var/log/kern.log':{ type:'file', content:'Jan 15 00:00:01 kali kernel: [    0.000000] Linux version 6.1.0-kali9-amd64\nJan 15 00:00:01 kali kernel: [    0.000001] Command line: BOOT_IMAGE=/vmlinuz-6.1.0-kali9-amd64 root=/dev/sda1 ro quiet\nJan 15 00:00:05 kali kernel: [    5.123456] eth0: renamed from veth4a2b' },
+  '/var/log/apache2':{ type:'dir', children:['access.log','error.log'] },
+  '/var/log/apache2/access.log':{ type:'file', content:'192.168.1.1 - - [15/Jan/2024:10:00:01 +0000] "GET / HTTP/1.1" 200 11173\n192.168.1.1 - - [15/Jan/2024:10:00:02 +0000] "GET /admin HTTP/1.1" 301 0\n10.10.10.1 - admin [15/Jan/2024:10:01:00 +0000] "POST /login HTTP/1.1" 200 0\n10.10.10.1 - - [15/Jan/2024:10:01:05 +0000] "GET /../../../etc/passwd HTTP/1.1" 400 0' },
+  '/var/www':{ type:'dir', children:['html'] },
+  '/var/www/html':{ type:'dir', children:['index.html','config.php','.htaccess','wp-config.php'] },
+  '/var/www/html/config.php':{ type:'file', content:'<?php\n$db_host = "localhost";\n$db_user = "webapp";\n$db_pass = "W3b4pp_S3cur3!";\n$db_name = "webapp_db";\n$secret_key = "y0ur_s3cr3t_k3y_h3r3";\n$admin_pass = "4dm1n_p4ss_2024";\n?>' },
+  '/var/www/html/.htaccess':{ type:'file', content:'Options -Indexes\nRewriteEngine On\nRewriteRule ^admin/?$ /admin/index.php [L]\n\n# deny access to sensitive files\n<FilesMatch "\\.(env|conf|bak|sql)$">\n  Order deny,allow\n  Deny from all\n</FilesMatch>' },
+  '/var/www/html/wp-config.php':{ type:'file', content:"<?php\ndefine('DB_NAME', 'wordpress');\ndefine('DB_USER', 'wp_user');\ndefine('DB_PASSWORD', 'Wordpr3ss_DB_P4ss!');\ndefine('DB_HOST', 'localhost');\ndefine('AUTH_KEY', 'put your unique phrase here');\n?>" },
+  '/var/backups':{ type:'dir', children:['etc_backup.tar.gz','shadow.bak','passwd.bak'] },
+  '/var/backups/shadow.bak':{ type:'file', content:'root:$6$rounds=5000$saltsalt$hashedpassword1\nkali:$6$rounds=5000$saltsalt$hashedpassword2', perms:'-rw-------', owner:'root' },
+
+  // /opt
+  '/opt':{ type:'dir', children:['scripts','data','encoded','hidden','archive','binary','links','filenames','fragments','config','final','rabbit'] },
+
+  '/opt/scripts':{ type:'dir', children:['backup.sh','cleanup.sh','minute_task.sh','weekly_report.sh','privesc_check.sh','deploy.sh'] },
+  '/opt/scripts/minute_task.sh':{ type:'file', content:'#!/bin/bash\n# Runs every minute as root\n# Internal flag for verification: FLAG{cr0n_scr1pt_r34d3r}\necho "$(date): minute task ran" >> /var/log/minute.log\n/usr/bin/python3 /opt/scripts/check_services.py 2>/dev/null', perms:'-rwxr-xr-x', owner:'root' }, // flag 15
+  '/opt/scripts/backup.sh':{ type:'file', content:'#!/bin/bash\nBACKUP_DIR=/var/backups\ntar czf $BACKUP_DIR/home_$(date +%Y%m%d).tar.gz /home/kali 2>/dev/null\necho "Backup complete: $(date)"', perms:'-rwxr-xr-x', owner:'root' },
+  '/opt/scripts/cleanup.sh':{ type:'file', content:'#!/bin/bash\nfind /tmp -name "*.tmp" -mtime +1 -delete\nfind /tmp -name "*.log" -mtime +7 -delete\necho "Cleanup done"', perms:'-rwxr-xr-x', owner:'root' },
+  '/opt/scripts/weekly_report.sh':{ type:'file', content:'#!/bin/bash\n# Weekly system report\necho "=== Weekly Report ===" > /tmp/weekly_report.txt\ndf -h >> /tmp/weekly_report.txt\nwho >> /tmp/weekly_report.txt\nuptime >> /tmp/weekly_report.txt', perms:'-rwxr-xr-x', owner:'root' },
+  '/opt/scripts/privesc_check.sh':{ type:'file', content:'#!/bin/bash\n# Allowed via sudoers: kali can run this as root\n# Purpose: check for privilege escalation vectors\necho "[*] Checking SUID binaries..."\nfind / -perm -4000 2>/dev/null\necho "[*] FLAG{sud0_pr1v_3sc_v3ct0r}"\necho "[*] Check /etc/sudoers for more vectors"', perms:'-rwxr-xr-x', owner:'root' }, // flag 21
+  '/opt/scripts/deploy.sh':{ type:'file', content:'#!/bin/bash\n# Deployment script\n# Author: devops@company.internal\n\nDEPLOY_KEY="n0t_a_fl4g"\n\necho "Starting deployment..."\n\ncat > /tmp/deploy_config.yaml << CONF\napp_name: webapp\nversion: 2.1.0\nflag: FLAG{h3r3d0c_s3cr3t}\nenvironment: production\ndebug: false\nCONF\n\necho "Config written to /tmp/deploy_config.yaml"\necho "Deployment complete."', perms:'-rwxr-xr-x' }, // flag 27
+
+  '/opt/data':{ type:'dir', children:['agents.csv','inventory.json','users.db'] },
+  '/opt/data/agents.csv':{ type:'file', content:'ID,CODENAME,STATUS,REGION,CLEARANCE,TOKEN\n001,BLUEBIRD,ACTIVE,EUROPE,TOP_SECRET,n0t_1t\n002,IRONCLAD,RETIRED,ASIA,SECRET,4ls0_n0t\n003,PHANTOM,ACTIVE,AMERICA,TOP_SECRET,FLAG{4wk_f1eld_m4st3r}\n004,REDWOOD,INACTIVE,AFRICA,CONFIDENTIAL,n0p3\n005,CIPHER,ACTIVE,EUROPE,TOP_SECRET,wr0ng_4g41n' }, // flag 8 field 6 of PHANTOM row
+  '/opt/data/users.db':{ type:'file', content:'id|username|email|password_hash|role\n1|admin|admin@corp.com|$2b$12$hash1|superadmin\n2|jdoe|j.doe@corp.com|$2b$12$hash2|user\n3|sysop|sysop@corp.com|$2b$12$hash3|operator' },
+
+  '/opt/encoded':{ type:'dir', children:['hexflag.txt','rot13flag.txt','b64_2.txt'] },
+  '/opt/encoded/hexflag.txt':{ type:'file', content:'464c41477b6833785f6433633064336435f7d0a\n\nHint: strip the last 4 chars, they are padding\nActual hex: 464c41477b6833785f6433633064336437d\n\nCorrect: 464c41477b6833785f643363306433647d' }, // flag 13 hex of FLAG{h3x_d3c0d3d_pr0}
+  '/opt/encoded/rot13flag.txt':{ type:'file', content:'Guvf vf n EBG13 rapbqrq zrffntr.\n\nSYNT{e0g13_p1cu3e_pe4px3q}\n\nGur cnffjbeq gb gur inyg vf: ABG_GUR_CNFFJBEQ' }, // flag 14 rot13 decode → FLAG{r0t13_c1ph3r_cr4ck3d}
+
+  '/opt/hidden':{ type:'dir', children:['reversed.txt','.do_not_look','.also_hidden'] },
+  '/opt/hidden/reversed.txt':{ type:'file', content:'}gn1rts_d3sr3v3r{GALF' },  // flag 10 reversed
+  '/opt/hidden/.do_not_look':{ type:'file', content:'Nothing to see here.\nMove along.\nSeriously.\nOk fine: this file is a decoy.' },
+  '/opt/hidden/.also_hidden':{ type:'file', content:'Another decoy. Keep looking.' },
+
+  '/opt/archive':{ type:'dir', children:['vault.tar.gz','decoy.tar.gz'] },
+  '/opt/archive/vault.tar.gz':{ type:'file', content:'[ARCHIVE CONTENTS]\nExtract to find: inner.tar.gz\n  └── secret.tar.gz\n      └── flag.txt: FLAG{n3st3d_4rch1v3_cr4ck3d}' }, // flag 16 — simulated
+  '/opt/archive/decoy.tar.gz':{ type:'file', content:'[ARCHIVE CONTENTS]\nExtract to find: nothing.txt: just a decoy, sorry' },
+
+  '/opt/binary':{ type:'dir', children:['firmware.bin','kernel_mod.ko','config.bin'] },
+  '/opt/binary/firmware.bin':{ type:'file', content:'\x00\x01\x02ELF\x00\x01\x00\x00\x00\x00garbage_data_AAAA\nBBBBBBBB\nCCCCC\n\x00\x01\x02\x03\x04\x05FLAG{str1ngs_1n_b1n4ry}\x00\x00\x00\nmore_garbage_DDDDDDDD\nEEEEEEEEEEEE\n\x00\x00\x00\xff\xfe\xfd' }, // flag 17
+
+  '/opt/links':{ type:'dir', children:['link_a','link_b','link_c','secret_link'] },
+  '/opt/links/link_a':{ type:'symlink', target:'/home/kali/Documents/notes.md' },
+  '/opt/links/link_b':{ type:'symlink', target:'/etc/hostname' },
+  '/opt/links/link_c':{ type:'symlink', target:'/var/log/kern.log' },
+  '/opt/links/secret_link':{ type:'symlink', target:'/opt/hidden_target/flag.txt' },
+  '/opt/hidden_target':{ type:'dir', children:['flag.txt'] },
+  '/opt/hidden_target/flag.txt':{ type:'file', content:'FLAG{syml1nk_ch4s3d}' },  // flag 20
+
+  '/opt/filenames':{ type:'dir', children:['readme.txt','RkxBR3tmMWwzbjRtM193NHNfM25jMGQzZH0=','config.bak','notes.tmp'] },
+  '/opt/filenames/readme.txt':{ type:'file', content:'One of the filenames in this directory is base64 encoded.\nDecode it to get the flag. The decoded filename IS the flag.' }, // flag 25
+  '/opt/filenames/RkxBR3tmMWwzbjRtM193NHNfM25jMGQzZH0=':{ type:'file', content:'You found it by decoding the filename! The flag is the decoded filename.' },
+  '/opt/filenames/config.bak':{ type:'file', content:'# Old config backup\ndb_host=localhost\ndb_user=admin\ndb_pass=0ldP4ss!' },
+  '/opt/filenames/notes.tmp':{ type:'file', content:'temp notes - delete me' },
+
+  '/opt/fragments':{ type:'dir', children:['frag_a','frag_b','frag_c','frag_decoy'] },
+  '/opt/fragments/frag_a':{ type:'file', content:'FLAG{thr33' },   // flag 18 part 1
+  '/opt/fragments/frag_b':{ type:'file', content:'_p4rts' },       // flag 18 part 2
+  '/opt/fragments/frag_c':{ type:'file', content:'_0n3_fl4g}' },   // flag 18 part 3
+  '/opt/fragments/frag_decoy':{ type:'file', content:'I am a decoy fragment. I contain nothing useful.' },
+
+  '/opt/config':{ type:'dir', children:['vault.conf','app.conf','db.conf','secrets'] },
+  '/opt/config/vault.conf':{ type:'file', content:'[vault]\naddress = https://vault.internal:8200\ntoken = hvs.CAESINOT_THE_FLAG\npath = secret/data/app', perms:'-rw-------', owner:'root' },
+  '/opt/config/app.conf':{ type:'file', content:'[app]\nhost = 0.0.0.0\nport = 8080\ndebug = false\nlog_level = INFO' },
+  '/opt/config/db.conf':{ type:'file', content:'[database]\nhost = localhost\nport = 5432\nname = appdb\nuser = appuser\npassword = DB_P4ss_2024!' },
+  '/opt/config/secrets':{ type:'dir', children:['api_keys.conf','internal.conf'] },
+  '/opt/config/secrets/api_keys.conf':{ type:'file', content:'[api_keys]\nstripe_key = sk_live_NOT_REAL\nsendgrid_key = SG.NOT_REAL\ntwilio_key = NOT_REAL' },
+  '/opt/config/secrets/internal.conf':{ type:'file', content:'[internal]\nmaster_secret = NOT_THE_FLAG_EITHER\nDEBUG_KEY = also_not_it\n\n# MASTER_KEY = FLAG{r3curs1v3_gr3p_m4st3r}\n# ^ yes that is real, grep found it!' }, // flag 28
+
+  '/opt/final':{ type:'dir', children:['piece_one','piece_two','piece_three','readme.txt'] },
+  '/opt/final/readme.txt':{ type:'file', content:'FINAL CHALLENGE\n===============\nThree pieces. Each is ROT13 encoded.\nDecode each piece, then concatenate them IN ORDER.\npiece_one + piece_two + piece_three = final flag\n\nGood luck.' },
+  '/opt/final/piece_one':{ type:'file', content:'SYNT{z4fg3e' },   // ROT13 of FLAG{m4st3r
+  '/opt/final/piece_two':{ type:'file', content:'_0s_x4y1' },      // ROT13 of _0f_k4l1
+  '/opt/final/piece_three':{ type:'file', content:'_y1ahk}' },      // ROT13 of _l1nux}
+
+  // Rabbit hole — 8 dirs deep
+  '/opt/rabbit':{ type:'dir', children:['level1'] },
+  '/opt/rabbit/level1':{ type:'dir', children:['level2','red_herring.txt'] },
+  '/opt/rabbit/level1/red_herring.txt':{ type:'file', content:'Not here. Go deeper.' },
+  '/opt/rabbit/level1/level2':{ type:'dir', children:['level3'] },
+  '/opt/rabbit/level1/level2/level3':{ type:'dir', children:['level4'] },
+  '/opt/rabbit/level1/level2/level3/level4':{ type:'dir', children:['level5','decoy.txt'] },
+  '/opt/rabbit/level1/level2/level3/level4/decoy.txt':{ type:'file', content:'Wrong level.' },
+  '/opt/rabbit/level1/level2/level3/level4/level5':{ type:'dir', children:['level6'] },
+  '/opt/rabbit/level1/level2/level3/level4/level5/level6':{ type:'dir', children:['level7'] },
+  '/opt/rabbit/level1/level2/level3/level4/level5/level6/level7':{ type:'dir', children:['level8'] },
+  '/opt/rabbit/level1/level2/level3/level4/level5/level6/level7/level8':{ type:'dir', children:['.hidden_deep'] },
+  '/opt/rabbit/level1/level2/level3/level4/level5/level6/level7/level8/.hidden_deep':{ type:'file', content:'FLAG{d33p_d1r_tr4v3rs4l}' }, // flag 11
+
+  // /tmp
+  '/tmp':{ type:'dir', children:['backup_20240115.tar.gz','session.tmp','xk92ms3p.dat','pwnkit_check.log'] },
+  '/tmp/xk92ms3p.dat':{ type:'file', content:'FLAG{tmp_3v1d3nc3_f0und}' },     // flag 26
+  '/tmp/session.tmp':{ type:'file', content:'session_id=4f8b2c1d9e7a3f6b\nuser=kali\nexpires=1705363200\ntoken=NOT_A_FLAG' },
+  '/tmp/pwnkit_check.log':{ type:'file', content:'[2024-01-15 10:22:00] Checking for CVE-2021-4034 (PwnKit)...\n[2024-01-15 10:22:01] Not vulnerable.\n[2024-01-15 10:22:01] Done.' },
+  '/tmp/backup_20240115.tar.gz':{ type:'file', content:'[ARCHIVE: backup of /home/kali/Documents taken 2024-01-15]' },
+
+  // /proc (fake)
+  '/proc':{ type:'dir', children:['version','cpuinfo','meminfo','flag','net'] },
+  '/proc/version':{ type:'file', content:'Linux version 6.1.0-kali9-amd64 (devel@kali.org) (gcc version 12.2.0 (Debian 12.2.0-14)) #1 SMP PREEMPT_DYNAMIC Debian 6.1.27-1kali1' },
+  '/proc/cpuinfo':{ type:'file', content:'processor\t: 0\nmodel name\t: Intel(R) Core(TM) i7-10750H CPU @ 2.60GHz\ncpu MHz\t\t: 2600.000\ncache size\t: 12288 KB' },
+  '/proc/flag':{ type:'file', content:'FLAG{pr0c_f1l3_s3cr3t}' },  // flag 29
+  '/proc/net':{ type:'dir', children:['tcp','udp','if_inet6'] },
+  '/proc/net/tcp':{ type:'file', content:'  sl  local_address rem_address   st\n   0: 00000000:0016 00000000:0000 0A\n   1: 0100007F:0CEA 00000000:0000 0A' },
+
+  // /usr /bin /sbin
+  '/usr':{ type:'dir', children:['bin','share','local'] },
+  '/usr/bin':{ type:'dir', children:['python3','nmap','curl','wget','nc','find','grep','awk','sed','cut','sort','uniq','base64','xxd','rev','strings','tr','wc','file','stat','diff','chmod','chown','ssh','mysql','psql'] },
+  '/usr/share':{ type:'dir', children:['wordlists','doc','man'] },
+  '/usr/share/wordlists':{ type:'dir', children:['rockyou.txt.gz','dirbuster','seclists'] },
+  '/usr/local':{ type:'dir', children:['bin','share','lib'] },
+  '/bin':{ type:'dir', children:['bash','sh','ls','cat','mkdir','rm','cp','mv','echo','ps','kill','ping','date','hostname','uname','id','whoami','find','grep','sed','awk'] },
+  '/sbin':{ type:'dir', children:['ifconfig','ip','iptables','reboot','shutdown','fdisk','mount'] },
+  '/dev':{ type:'dir', children:['null','zero','random','sda','sda1','tty','pts'] },
+
+  // Largest file for flag 24
+  '/opt/bigfile.txt':{ type:'file', content:(()=>{ let lines=[]; for(let i=0;i<2000;i++) lines.push(`line ${i}: ${'x'.repeat(60)}`); lines.push('FLAG{l4rg3st_f1l3_w1ns}'); return lines.join('\n'); })() },
+
+  // World-writable file for flag 23
+  '/opt/writable/shared_notes.txt':{ type:'file', content:'Community notes file\n\nFeel free to add notes here.\n\nFLAG{w0rld_wr1t4bl3_f0und}\n\nLast edited: kali', perms:'-rwxrwxrwx' },
+  '/opt/writable':{ type:'dir', children:['shared_notes.txt'] },
+
+  // Newest file for flag 22
+  '/var/log/new_evidence.log':{ type:'file', content:'[LATEST] System integrity check\nResult: 1 anomaly detected\nFLAG{f1nd_n3w3st_f1l3}\nTimestamp: 2024-01-15 23:59:59' },
+};
+
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let cwd = '/root';
+let cmdHist = [];
+let histIdx = -1;
+let found = JSON.parse(localStorage.getItem('kl30_found')||'[]');
+let score = parseInt(localStorage.getItem('kl30_score')||'0');
+let startTime = parseInt(localStorage.getItem('kl30_start')||Date.now());
+localStorage.setItem('kl30_start', startTime);
+
+// ══════════════════════════════════════════════════════
+//  FILESYSTEM HELPERS
+// ══════════════════════════════════════════════════════
+function resolve(p) {
+  if (!p||p==='~') return '/root';
+  if (p==='~/'||p.startsWith('~/')) p='/root'+p.slice(1);
+  if (!p.startsWith('/')) p = (cwd==='/'?'/':cwd+'/')+p;
+  const parts=p.split('/').filter(Boolean), stack=[];
+  for(const pt of parts){ if(pt==='.') continue; if(pt==='..') stack.pop(); else stack.push(pt); }
+  return '/'+stack.join('/');
+}
+function node(p){ return FS[resolve(p)]||null; }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ══════════════════════════════════════════════════════
+//  TERMINAL OUTPUT
+// ══════════════════════════════════════════════════════
+const termOut = document.getElementById('term-out');
+function pr(html){
+  const d=document.createElement('div');
+  d.innerHTML=html;
+  termOut.appendChild(d);
+  termOut.scrollTop=termOut.scrollHeight;
+}
+function prText(txt,cls='to'){ pr(`<span class="${cls}">${esc(txt)}</span>`); }
+function prErr(msg){ pr(`<span class="terr">${esc(msg)}</span>`); }
+
+// ══════════════════════════════════════════════════════
+//  COMMAND ROUTER
+// ══════════════════════════════════════════════════════
+function run(raw){
+  const input=raw.trim(); if(!input) return;
+  cmdHist.unshift(input); histIdx=-1;
+  const toks=input.split(/\s+/), cmd=toks[0], args=toks.slice(1);
+  pr(`<span class="tc">${esc(prompt_str())} </span><span style="color:#ccc">${esc(input)}</span>`);
+
+  // check for flag in output
+  setTimeout(()=>autoCheck(input),50);
+
+  if(input.includes('|')){ pipecmd(input); updatePromptLabel(); return; }
+
+  switch(cmd){
+    case 'ls':      cmdLs(args); break;
+    case 'cd':      cmdCd(args); break;
+    case 'cat':     cmdCat(args); break;
+    case 'head':    cmdHead(args); break;
+    case 'tail':    cmdTail(args); break;
+    case 'find':    cmdFind(args); break;
+    case 'grep':    cmdGrep(args,input); break;
+    case 'awk':     cmdAwk(args,input); break;
+    case 'cut':     cmdCut(args,input); break;
+    case 'wc':      cmdWc(args); break;
+    case 'rev':     cmdRev(args); break;
+    case 'base64':  cmdBase64(args); break;
+    case 'xxd':     cmdXxd(args); break;
+    case 'strings': cmdStrings(args); break;
+    case 'tr':      cmdTr(args,input); break;
+    case 'sort':    pr('<span class="to">[sort: simulated]</span>'); break;
+    case 'uniq':    pr('<span class="to">[uniq: simulated]</span>'); break;
+    case 'echo':    pr(`<span class="to">${esc(args.join(' '))}</span>`); break;
+    case 'pwd':     pr(`<span class="to">${cwd}</span>`); break;
+    case 'whoami':  pr('<span class="tok">root</span>'); break;
+    case 'id':      pr('<span class="to">uid=0(root) gid=0(root) groups=0(root)</span>'); break;
+    case 'hostname':pr('<span class="to">kali</span>'); break;
+    case 'uname':
+      pr('<span class="to">'+(args.includes('-a')?'Linux kali 6.1.0-kali9-amd64 #1 SMP PREEMPT Debian 6.1.27-1kali1 x86_64 GNU/Linux':'Linux')+'</span>'); break;
+    case 'date':    pr(`<span class="to">${new Date().toString()}</span>`); break;
+    case 'clear':   termOut.innerHTML=''; break;
+    case 'history': pr(cmdHist.slice().reverse().map((c,i)=>`<span class="to"> ${String(i+1).padStart(4)}  ${esc(c)}</span>`).join('\n')); break;
+    case 'env':     pr('<span class="to">PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\nHOME=/root\nUSER=root\nSHELL=/bin/bash\nTERM=xterm-256color\nSECRET_KEY=FLAG{3nv_v4r_l34k3d}</span>'); break;
+    case 'mkdir':   cmdMkdir(args); break;
+    case 'touch':   cmdTouch(args); break;
+    case 'rm':      pr('<span class="to">[simulated: removed]</span>'); break;
+    case 'cp':      pr('<span class="to">[simulated: copied]</span>'); break;
+    case 'mv':      pr('<span class="to">[simulated: moved]</span>'); break;
+    case 'chmod':   pr('<span class="to">[simulated: permissions changed]</span>'); break;
+    case 'chown':   pr('<span class="to">[simulated: owner changed]</span>'); break;
+    case 'stat':    cmdStat(args); break;
+    case 'file':    cmdFile(args); break;
+    case 'which':   cmdWhich(args); break;
+    case 'ps':      pr('<span class="to">  PID TTY      TIME CMD\n    1 ?    00:00:01 systemd\n  900 ?    00:00:00 sshd\n 1234 pts/0 00:00:00 bash\n 1250 pts/0 00:00:00 ps</span>'); break;
+    case 'ss':      pr('<span class="to">Netid  State   Local Address:Port\ntcp    LISTEN  0.0.0.0:22\ntcp    LISTEN  0.0.0.0:80\ntcp    LISTEN  127.0.0.1:3306</span>'); break;
+    case 'ip':
+      if(args[0]==='a'||args[0]==='addr') pr('<span class="to">2: eth0: inet 192.168.1.50/24\n3: wlan0: inet 10.10.14.2/23</span>');
+      else if(args[0]==='route') pr('<span class="to">default via 192.168.1.1 dev eth0\n10.10.14.0/23 dev tun0</span>');
+      else prErr('ip: unknown subcommand'); break;
+    case 'sudo':    pr('<span class="to">[simulated: running as root already]</span>'); break;
+    case 'su':      pr('<span class="to">[simulated: already root]</span>'); break;
+    case 'python3': cmdPython(args); break;
+    case 'nc':      pr('<span class="to">[simulated netcat]</span>'); break;
+    case 'curl':    pr('<span class="to">[simulated: HTTP request]</span>'); break;
+    case 'wget':    pr('<span class="to">[simulated: download]</span>'); break;
+    case 'ssh':     pr('<span class="to">[simulated: SSH connection]</span>'); break;
+    case 'help':    cmdHelp(); break;
+    case 'man':     pr(`<span class="to">man: use --help or search online for ${esc(args[0]||'command')} manual</span>`); break;
+    case 'less':    cmdCat(args); break;
+    case 'more':    cmdCat(args); break;
+    case 'diff':    pr('<span class="to">[simulated: diff output]</span>'); break;
+    case 'tar':     cmdTar(args); break;
+    case 'xargs':   pr('<span class="to">[simulated xargs output]</span>'); break;
+    case 'tee':     pr('<span class="to">[simulated: tee output]</span>'); break;
+    case 'column':  pr('<span class="to">[simulated: column output]</span>'); break;
+    case 'export':  pr('<span class="to">[simulated: variable set]</span>'); break;
+    default:        prErr(`bash: ${esc(cmd)}: command not found`);
+  }
+  updatePromptLabel();
+}
+
+// ══════════════════════════════════════════════════════
+//  COMMANDS
+// ══════════════════════════════════════════════════════
+function colorEntry(name, n){
+  if(!n) return esc(name);
+  if(n.type==='dir') return `<span class="tdir">${esc(name)}/</span>`;
+  if(n.type==='symlink') return `<span class="tlink">${esc(name)} -> ${esc(n.target)}</span>`;
+  if(n.perms&&n.perms.includes('x')) return `<span class="texe">${esc(name)}</span>`;
+  if(name.startsWith('.')) return `<span class="tmut">${esc(name)}</span>`;
+  return `<span class="to">${esc(name)}</span>`;
+}
+
+function cmdLs(args){
+  const showHidden=args.some(a=>a.startsWith('-')&&a.includes('a'));
+  const longFmt=args.some(a=>a.startsWith('-')&&a.includes('l'));
+  const target=args.find(a=>!a.startsWith('-'))||cwd;
+  const p=resolve(target), n=node(p);
+  if(!n){ prErr(`ls: cannot access '${target}': No such file or directory`); return; }
+  if(n.type==='file'){ pr(colorEntry(p.split('/').pop(),n)); return; }
+  let children=(n.children||[]).slice();
+  if(!showHidden) children=children.filter(c=>!c.startsWith('.'));
+  if(!children.length){ return; }
+  const lines=children.map(name=>{
+    const cp=p==='/'?'/'+name:p+'/'+name, cn=FS[cp];
+    if(longFmt){
+      const perms=cn?(cn.perms||(cn.type==='dir'?'drwxr-xr-x':'-rw-r--r--')):'-rw-r--r--';
+      const own=cn?.owner||'root';
+      const sz=cn?.type==='file'?(cn.content||'').length:4096;
+      return `<span class="to">${perms} 1 ${own} ${own} ${String(sz).padStart(7)} Jan 15 10:23 ${colorEntry(name,cn)}</span>`;
+    }
+    return colorEntry(name,cn);
+  });
+  if(longFmt) pr(lines.join('\n'));
+  else pr(lines.join('  '));
+}
+
+function cmdCd(args){
+  const target=args[0]||'/root', p=resolve(target), n=node(p);
+  if(!n){ prErr(`bash: cd: ${target}: No such file or directory`); return; }
+  if(n.type!=='dir'){ prErr(`bash: cd: ${target}: Not a directory`); return; }
+  cwd=p;
+}
+
+function cmdCat(args){
+  const files=args.filter(a=>!a.startsWith('-'));
+  if(!files.length){ prErr('cat: missing operand'); return; }
+  for(const f of files){
+    const p=resolve(f), n=node(p);
+    if(!n){ prErr(`cat: ${f}: No such file or directory`); continue; }
+    if(n.type==='dir'){ prErr(`cat: ${f}: Is a directory`); continue; }
+    if(n.type==='symlink'){ const tn=FS[n.target]; if(tn&&tn.type==='file') pr(`<span class="to">${esc(tn.content||'')}</span>`); else prErr(`cat: ${f}: broken symlink`); continue; }
+    if(n.content&&n.content.startsWith('cat:')&&n.content.includes('Permission denied')){ prErr(n.content); continue; }
+    pr(`<span class="to">${esc(n.content||'')}</span>`);
+  }
+}
+
+function cmdHead(args){
+  const nf=args.indexOf('-n'), n=nf>-1?parseInt(args[nf+1])||10:10;
+  const f=args.find(a=>!a.startsWith('-')&&isNaN(parseInt(a)));
+  if(!f){ prErr('head: missing file'); return; }
+  const nd=node(resolve(f));
+  if(!nd||nd.type==='dir'){ prErr(`head: ${f}: No such file`); return; }
+  pr(`<span class="to">${esc((nd.content||'').split('\n').slice(0,n).join('\n'))}</span>`);
+}
+
+function cmdTail(args){
+  const nf=args.indexOf('-n'), n=nf>-1?parseInt(args[nf+1])||10:10;
+  const f=args.find(a=>!a.startsWith('-')&&isNaN(parseInt(a)));
+  if(!f){ prErr('tail: missing file'); return; }
+  const nd=node(resolve(f));
+  if(!nd||nd.type==='dir'){ prErr(`tail: ${f}: No such file`); return; }
+  pr(`<span class="to">${esc((nd.content||'').split('\n').slice(-n).join('\n'))}</span>`);
+}
+
+function cmdFind(args){
+  let startP=args.find(a=>!a.startsWith('-')&&!['name','type','perm','mtime','newer','perm','readable','size','user','o','a','not','exec'].includes(a))||cwd;
+  if(startP.startsWith('-')) startP=cwd;
+  const nameI=args.indexOf('-name'), pattern=nameI>-1?args[nameI+1]:null;
+  const typeI=args.indexOf('-type'), tf=typeI>-1?args[typeI+1]:null;
+  const permI=args.indexOf('-perm');
+  const newI=args.indexOf('-newer'), newRef=newI>-1?args[newI+1]:null;
+  const readI=args.includes('-readable');
+  const permV=permI>-1?args[permI+1]:null;
+
+  const base=resolve(startP), results=[];
+  function walk(p){
+    const n=FS[p]; if(!n) return;
+    const name=p.split('/').pop();
+    let ok=true;
+    if(pattern){ const re=new RegExp('^'+pattern.replace('*','.*').replace('?','.')+'$'); ok=ok&&re.test(name); }
+    if(tf) ok=ok&&((tf==='f'&&n.type==='file')||(tf==='d'&&n.type==='dir')||(tf==='l'&&n.type==='symlink'));
+    if(readI) ok=ok&&(n.type==='file'&&!(n.content||'').startsWith('cat:'));
+    if(permV==='777'||permV==='-0002') ok=ok&&(n.perms==='rwxrwxrwx'||n.perms==='-rwxrwxrwx');
+    if(ok) results.push(p);
+    if(n.type==='dir'&&n.children) n.children.forEach(c=>walk(p==='/'?'/'+c:p+'/'+c));
+  }
+  if(permV&&(permV.includes('4000')||permV==='-4000')){
+    pr('<span class="to">/usr/bin/passwd\n/usr/bin/sudo\n/bin/su\n/usr/bin/newgrp\n/usr/bin/pkexec</span>'); return;
+  }
+  if(newRef){
+    pr('<span class="to">/var/log/new_evidence.log\n/tmp/xk92ms3p.dat</span>'); return;
+  }
+  walk(base);
+  if(!results.length) pr('');
+  else pr(results.map(r=>`<span class="to">${esc(r)}</span>`).join('\n'));
+}
+
+function cmdGrep(args, raw){
+  if(raw.includes('|')){ pipecmd(raw); return; }
+  const flags=args.filter(a=>a.startsWith('-'));
+  const nf=args.filter(a=>!a.startsWith('-'));
+  if(nf.length<2){ prErr('grep: usage: grep [flags] PATTERN FILE'); return; }
+  const pattern=nf[0].replace(/['"]/g,'');
+  const files=nf.slice(1);
+  const rec=flags.includes('-r')||flags.includes('-R');
+  const ci=flags.includes('-i');
+  const ln=flags.includes('-n');
+  const fps=rec?Object.keys(FS).filter(p=>FS[p].type==='file'):files.map(f=>resolve(f));
+  let results=[];
+  for(const fp of fps){
+    const n=FS[fp]; if(!n||n.type!=='file') continue;
+    (n.content||'').split('\n').forEach((line,i)=>{
+      const re=new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g,(m)=>m==='*'?'.*':'\\'+m),ci?'i':'');
+      if(re.test(line)){
+        const pref=(rec||files.length>1)?`<span class="tyel">${esc(fp)}:</span>`:'';
+        const lp=ln?`<span class="tora">${i+1}:</span>`:'';
+        results.push(pref+lp+`<span class="tok">${esc(line)}</span>`);
+      }
+    });
+  }
+  if(results.length) pr(results.join('\n'));
+}
+
+function cmdAwk(args, raw){
+  if(raw.includes('|')){ pipecmd(raw); return; }
+  const fI=args.indexOf('-F'), sep=fI>-1?args[fI+1].replace(/['"]/g,''):' ';
+  const fA=args[args.length-1];
+  if(!fA||fA.startsWith('-')||fA.startsWith("'")||fA.startsWith('"')){ pr('<span class="to">[awk: pipe input required or specify file]</span>'); return; }
+  const n=node(resolve(fA));
+  if(!n||n.type!=='dir'&&!n.content){ prErr(`awk: can't open ${fA}`); return; }
+  const prog=args.find(a=>a.includes('print'))||'{print}';
+  const condM=prog.match(/\$(\d+)==["']?([^"'\{]+)["']?\{/);
+  const flds=(prog.match(/\$(\d+)/g)||[]);
+  (n.content||'').split('\n').forEach(line=>{
+    const fs2=line.split(sep==' '?/\s+/:new RegExp(sep.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+    if(condM){ const ci2=parseInt(condM[1])-1; if(fs2[ci2]!==condM[2].trim()) return; }
+    if(flds.length){
+      const out=flds.map(f=>fs2[parseInt(f.slice(1))-1]||'').join(' ');
+      pr(`<span class="to">${esc(out)}</span>`);
+    } else pr(`<span class="to">${esc(line)}</span>`);
+  });
+}
+
+function cmdCut(args, raw){
+  if(raw.includes('|')){ pipecmd(raw); return; }
+  const dI=args.indexOf('-d'), sep=dI>-1?args[dI+1].replace(/['"]/g,''):'\t';
+  const fI=args.indexOf('-f'), fi=fI>-1?parseInt(args[fI+1])-1:0;
+  const fA=args.find(a=>!a.startsWith('-')&&a!==sep&&isNaN(parseInt(a)));
+  if(!fA){ prErr('cut: missing file'); return; }
+  const n=node(resolve(fA));
+  if(!n||n.type==='dir'){ prErr(`cut: ${fA}: No such file`); return; }
+  (n.content||'').split('\n').forEach(l=>pr(`<span class="to">${esc(l.split(sep)[fi]||'')}</span>`));
+}
+
+function cmdWc(args){
+  const f=args.find(a=>!a.startsWith('-'));
+  if(!f){ prErr('wc: missing file'); return; }
+  const n=node(resolve(f));
+  if(!n||n.type==='dir'){ prErr(`wc: ${f}: No such file`); return; }
+  const c=n.content||'';
+  pr(`<span class="to">${c.split('\n').length} ${c.split(/\s+/).filter(Boolean).length} ${c.length} ${esc(f)}</span>`);
+}
+
+function cmdRev(args){
+  const f=args.find(a=>!a.startsWith('-'));
+  if(!f){ prErr('rev: missing file'); return; }
+  const n=node(resolve(f));
+  if(!n||n.type==='dir'){ prErr(`rev: ${f}: No such file`); return; }
+  (n.content||'').split('\n').forEach(l=>pr(`<span class="tok">${esc(l.split('').reverse().join(''))}</span>`));
+}
+
+function cmdBase64(args){
+  const decode=args.includes('-d');
+  const f=args.find(a=>!a.startsWith('-'));
+  if(!f){ prErr('base64: missing file'); return; }
+  const n=node(resolve(f));
+  if(!n||n.type==='dir'){ prErr(`base64: ${f}: No such file`); return; }
+  if(decode){
+    try{ pr(`<span class="tok">${esc(atob((n.content||'').trim()))}</span>`); }
+    catch(e){ prErr('base64: invalid input'); }
+  } else pr(`<span class="to">${esc(btoa(n.content||''))}</span>`);
+}
+
+function cmdXxd(args){
+  const rp=args.includes('-r')&&args.includes('-p');
+  const f=args.find(a=>!a.startsWith('-'));
+  if(!f){ prErr('xxd: missing file'); return; }
+  const n=node(resolve(f));
+  if(!n||n.type==='dir'){ prErr(`xxd: ${f}: No such file`); return; }
+  if(rp){
+    try{
+      const hex=(n.content||'').replace(/\s/g,'').replace(/[^0-9a-fA-F]/g,'').slice(0,100);
+      const bytes=hex.match(/.{2}/g)||[];
+      pr(`<span class="tok">${esc(bytes.map(b=>String.fromCharCode(parseInt(b,16))).join(''))}</span>`);
+    }catch(e){ prErr('xxd: decode error'); }
+  } else {
+    const content=(n.content||'').slice(0,64);
+    let hex='';
+    for(let i=0;i<content.length;i++) hex+=content.charCodeAt(i).toString(16).padStart(2,'0')+' ';
+    pr(`<span class="to">${esc('00000000: '+hex.trim())}</span>`);
+  }
+}
+
+function cmdStrings(args){
+  const f=args.find(a=>!a.startsWith('-'));
+  if(!f){ prErr('strings: missing file'); return; }
+  const n=node(resolve(f));
+  if(!n||n.type==='dir'){ prErr(`strings: ${f}: No such file`); return; }
+  const matches=(n.content||'').match(/[\x20-\x7E]{4,}/g)||[];
+  pr(matches.map(s=>`<span class="to">${esc(s)}</span>`).join('\n'));
+}
+
+function cmdTr(args, raw){
+  if(raw.includes('|')){ pipecmd(raw); return; }
+  const sets=args.filter(a=>!a.startsWith('-'));
+  if(sets.length<2){ pr('<span class="to">[tr: pipe input required]</span>'); return; }
+  // try to find a file at end
+  const f=args[args.length-1];
+  const n=node(resolve(f));
+  if(!n||n.type==='dir'){ pr('<span class="to">[tr: pipe input required]</span>'); return; }
+  const from=sets[0].replace(/['"]/g,''), to=sets[1].replace(/['"]/g,'');
+  const result=(n.content||'').split('').map(c=>{ const i=from.indexOf(c); return i>-1?(to[i]||c):c; }).join('');
+  pr(`<span class="tok">${esc(result)}</span>`);
+}
+
+function cmdPython(args){
+  const cI=args.indexOf('-c');
+  if(cI>-1){
+    const code=args.slice(cI+1).join(' ').replace(/['"]/g,'');
+    if(code.includes('bytes.fromhex')){
+      // Extract hex from code
+      const hexM=code.match(/fromhex\(([^)]+)\)/);
+      if(hexM){
+        const hex=hexM[1].replace(/['"\\n]/g,'');
+        try{
+          const bytes=hex.match(/.{2}/g)||[];
+          const result=bytes.map(b=>String.fromCharCode(parseInt(b,16))).join('');
+          pr(`<span class="tok">${esc(result)}</span>`);
+        }catch(e){ prErr('python3: invalid hex'); }
+      } else pr('<span class="to">[python3: simulated]</span>');
+    } else if(code.includes('base64')||code.includes('b64decode')){
+      pr('<span class="to">[python3: base64 decode simulated]</span>');
+    } else pr(`<span class="to">[python3: ${esc(code.slice(0,60))}...]</span>`);
+  } else pr('<span class="to">[python3: interactive mode - not supported in lab]</span>');
+}
+
+function cmdMkdir(args){
+  args.filter(a=>!a.startsWith('-')).forEach(d=>{
+    const p=resolve(d);
+    FS[p]={type:'dir',children:[]};
+    const par=p.substring(0,p.lastIndexOf('/'))||'/';
+    const name=p.split('/').pop();
+    if(FS[par]?.children&&!FS[par].children.includes(name)) FS[par].children.push(name);
+  });
+}
+function cmdTouch(args){
+  args.forEach(f=>{ const p=resolve(f); if(!FS[p]){ FS[p]={type:'file',content:''}; const par=p.substring(0,p.lastIndexOf('/'))||'/'; const name=p.split('/').pop(); if(FS[par]?.children) FS[par].children.push(name); } });
+}
+
+function cmdStat(args){
+  const f=args[0]; if(!f){ prErr('stat: missing operand'); return; }
+  const p=resolve(f), n=node(p);
+  if(!n){ prErr(`stat: ${f}: No such file or directory`); return; }
+  const perms=n.perms||(n.type==='dir'?'drwxr-xr-x':'-rw-r--r--');
+  pr(`<span class="to">  File: ${esc(p)}\n  Type: ${n.type}\n  Size: ${(n.content||'').length}\nAccess: ${perms}\n Inode: ${Math.floor(Math.random()*99999)}\nModify: 2024-01-15 10:23:01</span>`);
+}
+
+function cmdFile(args){
+  const f=args[0]; if(!f){ prErr('file: missing operand'); return; }
+  const p=resolve(f), n=node(p);
+  if(!n){ prErr(`file: ${f}: No such file or directory`); return; }
+  let t=n.type==='dir'?'directory':'ASCII text';
+  if(p.endsWith('.sh')) t='Bourne-Again shell script, ASCII text executable';
+  if(p.endsWith('.py')) t='Python script, ASCII text executable';
+  if(p.endsWith('.gz')) t='gzip compressed data';
+  if(p.endsWith('.bin')||p.endsWith('.ko')) t='ELF 64-bit LSB executable, x86-64';
+  if(p.endsWith('.dat')) t='data';
+  pr(`<span class="to">${esc(p)}: ${t}</span>`);
+}
+
+function cmdWhich(args){
+  const bins={bash:'/bin/bash',python3:'/usr/bin/python3',find:'/usr/bin/find',grep:'/usr/bin/grep',awk:'/usr/bin/awk',sed:'/usr/bin/sed',nmap:'/usr/bin/nmap',curl:'/usr/bin/curl',base64:'/usr/bin/base64',xxd:'/usr/bin/xxd',strings:'/usr/bin/strings',rev:'/usr/bin/rev',tr:'/usr/bin/tr'};
+  args.forEach(a=>pr(bins[a]?`<span class="to">${bins[a]}</span>`:`<span class="terr">${esc(a)}: not found</span>`));
+}
+
+function cmdTar(args){
+  const f=args.find(a=>a.endsWith('.tar.gz')||a.endsWith('.gz'));
+  if(!f){ pr('<span class="to">[tar: specify an archive file]</span>'); return; }
+  const n=node(resolve(f));
+  if(!n){ prErr(`tar: ${f}: No such file`); return; }
+  pr(`<span class="to">${esc(n.content||'[empty archive]')}</span>`);
+}
+
+function cmdHelp(){
+  pr(`<span class="tok">KaliLab CTF — Commands</span>
+<span class="to">Navigation:  ls [-la] [path]  cd [path]  pwd  find</span>
+<span class="to">Reading:     cat  head -n N  tail -n N  strings  xxd  file  stat</span>
+<span class="to">Search:      grep [-r/-i/-n] PATTERN FILE</span>
+<span class="to">Text:        awk -F, '{print $N}' file   cut -d, -fN file   rev file</span>
+<span class="to">Encoding:    base64 -d file   tr 'a-z' 'n-za-m' file   python3 -c "..."</span>
+<span class="to">Archives:    tar xzf file.tar.gz</span>
+<span class="to">System:      whoami  id  ps  ss  env  history  uname -a</span>
+<span class="to">Other:       clear  help  echo  mkdir  touch</span>
+<span class="tyel">Pipes:       cmd1 | cmd2   (e.g. cat file | grep FLAG)</span>`);
+}
+
+// ══════════════════════════════════════════════════════
+//  PIPE ENGINE
+// ══════════════════════════════════════════════════════
+function pipecmd(raw){
+  const segs=raw.split('|').map(s=>s.trim());
+  let content='';
+
+  // Execute first segment, capture content
+  const first=segs[0].split(/\s+/);
+  const fcmd=first[0], fargs=first.slice(1);
+  if(fcmd==='cat'){
+    const f=fargs.find(a=>!a.startsWith('-'));
+    if(f){ const n=node(resolve(f)); content=n?(n.type==='symlink'?(FS[n.target]?.content||''):(n.content||'')):'';}
+  } else if(fcmd==='echo'){
+    content=fargs.join(' ').replace(/['"]/g,'');
+  } else if(fcmd==='find'){
+    // capture find output as list
+    const lines=[];
+    const startP=fargs.find(a=>!a.startsWith('-'))||cwd;
+    function walkp(p){ const n=FS[p]; if(!n)return; lines.push(p); if(n.type==='dir'&&n.children) n.children.forEach(c=>walkp(p==='/'?'/'+c:p+'/'+c)); }
+    walkp(resolve(startP)); content=lines.join('\n');
+  }
+
+  // Process through remaining pipe segments
+  for(let si=1;si<segs.length;si++){
+    const seg=segs[si].split(/\s+/), scmd=seg[0], sargs=seg.slice(1);
+    if(scmd==='grep'){
+      const flags=sargs.filter(a=>a.startsWith('-'));
+      const nf=sargs.filter(a=>!a.startsWith('-'));
+      const pattern=(nf[0]||'').replace(/['"]/g,'');
+      const ci=flags.includes('-i'), ln=flags.includes('-n');
+      const re=new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g,(m)=>m==='*'?'.*':'\\'+m),ci?'i':'');
+      const matched=content.split('\n').filter(l=>re.test(l));
+      content=matched.join('\n');
+    } else if(scmd==='awk'){
+      const fI=sargs.indexOf('-F'), sep=fI>-1?sargs[fI+1].replace(/['"]/g,''):' ';
+      const prog=sargs.find(a=>a.includes('print'))||'{print}';
+      const condM=prog.match(/\$(\d+)==["']?([^"'\{]+)["']?\{/);
+      const flds=(prog.match(/\$(\d+)/g)||[]);
+      const out=content.split('\n').map(line=>{
+        const fs2=line.split(sep===' '?/\s+/:new RegExp(sep.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+        if(condM){ const ci2=parseInt(condM[1])-1; if(fs2[ci2]!==condM[2].trim()) return null; }
+        if(flds.length) return flds.map(f=>fs2[parseInt(f.slice(1))-1]||'').join(' ');
+        return line;
+      }).filter(l=>l!==null);
+      content=out.join('\n');
+    } else if(scmd==='cut'){
+      const dI=sargs.indexOf('-d'), sep=dI>-1?sargs[dI+1].replace(/['"]/g,''):'\t';
+      const fI=sargs.indexOf('-f'), fi=fI>-1?parseInt(sargs[fI+1])-1:0;
+      content=content.split('\n').map(l=>l.split(sep)[fi]||'').join('\n');
+    } else if(scmd==='tr'){
+      const sets=sargs.filter(a=>!a.startsWith('-'));
+      if(sets.length>=2){
+        const from=sets[0].replace(/['"]/g,''), to=sets[1].replace(/['"]/g,'');
+        // Handle tr a-zA-Z n-za-mN-ZA-M (ROT13)
+        let fromExp='', toExp='';
+        const expandRange=s=>{ let r=''; for(let i=0;i<s.length;i++){ if(s[i+1]==='-'&&s[i+2]){ const a=s.charCodeAt(i),b=s.charCodeAt(i+2); for(let c=a;c<=b;c++) r+=String.fromCharCode(c); i+=2; } else r+=s[i]; } return r; };
+        fromExp=expandRange(from); toExp=expandRange(to);
+        content=content.split('').map(c=>{ const i=fromExp.indexOf(c); return i>-1?(toExp[i]||c):c; }).join('');
+      }
+    } else if(scmd==='sort'){
+      content=content.split('\n').sort().join('\n');
+    } else if(scmd==='uniq'){
+      const lines=content.split('\n'); content=lines.filter((l,i)=>l!==lines[i-1]).join('\n');
+    } else if(scmd==='head'){
+      const nf=sargs.indexOf('-n'), n=nf>-1?parseInt(sargs[nf+1])||10:10;
+      content=content.split('\n').slice(0,n).join('\n');
+    } else if(scmd==='tail'){
+      const nf=sargs.indexOf('-n'), n=nf>-1?parseInt(sargs[nf+1])||10:10;
+      content=content.split('\n').slice(-n).join('\n');
+    } else if(scmd==='wc'){
+      const lines=content.split('\n'); content=`${lines.length} ${content.split(/\s+/).filter(Boolean).length} ${content.length}`;
+    } else if(scmd==='rev'){
+      content=content.split('\n').map(l=>l.split('').reverse().join('')).join('\n');
+    } else if(scmd==='base64'){
+      if(sargs.includes('-d')){ try{ content=atob(content.trim()); }catch(e){ content='[base64: invalid input]'; } }
+      else content=btoa(content);
+    } else if(scmd==='xargs'){
+      // pass-through
+    }
+  }
+
+  if(content) pr(`<span class="tok">${esc(content)}</span>`);
+}
+
+// ══════════════════════════════════════════════════════
+//  AUTO-CHECK: scan terminal output for flags
+// ══════════════════════════════════════════════════════
+function autoCheck(input){
+  // scan last few output lines
+  const divs=termOut.querySelectorAll('div');
+  const recent=Array.from(divs).slice(-8).map(d=>d.textContent).join('\n');
+  const matches=recent.match(/FLAG\{[^}]+\}/g);
+  if(matches) matches.forEach(f=>{ const fl=FLAGS.find(x=>x.check(f)); if(fl&&!found.includes(fl.id)) awardFlag(fl); });
+}
+
+// ══════════════════════════════════════════════════════
+//  FLAG SUBMISSION
+// ══════════════════════════════════════════════════════
+function submitFlag(){
+  const val=document.getElementById('flag-input').value.trim();
+  const msg=document.getElementById('submit-msg');
+  if(!val){ msg.textContent='Enter a flag first.'; msg.className='err'; return; }
+  const fl=FLAGS.find(f=>f.check(val));
+  if(!fl){ msg.textContent='✗ Invalid flag.'; msg.className='err'; setTimeout(()=>msg.textContent='',2000); return; }
+  if(found.includes(fl.id)){ msg.textContent='Already found.'; msg.className='dup'; setTimeout(()=>msg.textContent='',2000); return; }
+  awardFlag(fl);
+  document.getElementById('flag-input').value='';
+}
+
+function awardFlag(fl){
+  found.push(fl.id);
+  score+=fl.pts;
+  localStorage.setItem('kl30_found',JSON.stringify(found));
+  localStorage.setItem('kl30_score',score);
+  updateScoreUI();
+  renderFlagList();
+  showToast(`🚩 FLAG #${fl.id} — ${fl.name} · +${fl.pts} pts`);
+  const msg=document.getElementById('submit-msg');
+  msg.textContent=`✓ +${fl.pts} pts!`; msg.className='ok';
+  setTimeout(()=>msg.textContent='',2500);
+  if(found.length===30) setTimeout(()=>showModal('🏆 YOU WIN','<p>All 30 flags found! Congratulations — you are a master of Kali Linux navigation.</p><p style="margin-top:8px">Final score: <strong style="color:var(--green)">'+score+'</strong></p>'),500);
+}
+
+document.getElementById('flag-input').addEventListener('keydown',e=>{ if(e.key==='Enter') submitFlag(); });
+
+// ══════════════════════════════════════════════════════
+//  UI
+// ══════════════════════════════════════════════════════
+function updateScoreUI(){
+  document.getElementById('score-val').textContent=score;
+  document.getElementById('flag-val').textContent=found.length;
+}
+
+function renderFlagList(){
+  const cats=[...new Set(FLAGS.map(f=>f.cat))];
+  document.getElementById('tab-flags').innerHTML=cats.map(cat=>{
+    const fl=FLAGS.filter(f=>f.cat===cat);
+    return `<div class="cat-heading">${cat}</div>`+fl.map(f=>`
+      <div class="flag-item ${found.includes(f.id)?'found':''}" onclick="showFlagHint(${f.id})">
+        <div class="flag-num">#${f.id}</div>
+        <div class="flag-diff d-${f.diff}"></div>
+        <div class="flag-name">${f.name}</div>
+        <div class="flag-pts">${found.includes(f.id)?'✓':''} ${f.pts}pt</div>
+      </div>`).join('');
+  }).join('');
+  renderBoard();
+}
+
+function showFlagHint(id){
+  const f=FLAGS.find(x=>x.id===id);
+  if(!f) return;
+  showModal(`#${f.id} — ${f.name}`,`
+    <p style="margin-bottom:8px"><span style="color:var(--yellow)">Difficulty:</span> ${f.diff} &nbsp;|&nbsp; <span style="color:var(--green)">Points:</span> ${f.pts}</p>
+    <p style="margin-bottom:8px"><span style="color:var(--yellow)">Status:</span> ${found.includes(f.id)?'<span style="color:var(--green)">FOUND ✓</span>':'<span style="color:var(--red)">NOT YET FOUND</span>'}</p>
+    <p style="color:var(--muted);font-size:.75rem;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Hint</p>
+    <p>${f.hint}</p>`);
+}
+
+function renderBoard(){
+  const rows=[];
+  rows.push(`<div class="sb-row"><div class="sb-rank">—</div><div class="sb-name" style="color:var(--green)">YOU</div><div class="sb-score">${score} pts (${found.length}/30)</div></div>`);
+  const board=[{name:'Ghost_0x41',score:4200,flags:29},{name:'n0x3r',score:3750,flags:26},{name:'kali_hunter',score:2900,flags:20},{name:'pwn3r_pro',score:2100,flags:15},{name:'newbie_sec',score:800,flags:6}];
+  board.forEach((p,i)=>rows.push(`<div class="sb-row"><div class="sb-rank" style="color:var(--yellow)">${i+1}</div><div class="sb-name">${p.name}</div><div class="sb-score">${p.score} pts</div></div>`));
+  document.getElementById('board-list').innerHTML=rows.join('');
+}
+
+function switchTab(name,el){
+  document.querySelectorAll('.ltab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.lpanel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+function showToast(msg,err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=err?'err-toast':'';
+  t.style.display='block';
+  setTimeout(()=>t.style.display='none',3500);
+}
+
+function showModal(title,body){
+  document.getElementById('mtitle').textContent=title;
+  document.getElementById('mbody').innerHTML=body;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal(){ document.getElementById('modal').classList.remove('show'); }
+
+function showHelp(){
+  showModal('How to Play',`
+  <ul>
+    <li>This is a simulated Kali Linux terminal. 30 flags are hidden across the filesystem.</li>
+    <li>Flags look like <span style="color:var(--green)">FLAG{some_text}</span> — submit them in the bar at the top.</li>
+    <li>Flags are auto-detected when they appear in the terminal output.</li>
+    <li>Click any flag in the sidebar for a hint.</li>
+    <li>Use the Cheatsheet button for key commands.</li>
+    <li>Start with: <span style="color:var(--yellow)">ls -la /home/kali</span> and explore from there.</li>
+    <li>Flags get harder — Expert flags require combining multiple techniques.</li>
+  </ul>`);
+}
+
+function showCheat(){
+  showModal('Quick Cheatsheet',`
+  <table style="font-size:.78rem;width:100%;border-collapse:collapse">
+  <tr><td style="padding:4px 8px;color:var(--yellow)">ls -la [path]</td><td style="padding:4px 8px;color:var(--text)">List all files including hidden</td></tr>
+  <tr><td style="padding:4px 8px;color:var(--yellow)">cat /path/file</td><td style="padding:4px 8px;color:var(--text)">Read a file</td></tr>
+  <tr><td style="padding:4px 8px;color:var(--yellow)">find / -name "*.txt"</td><td style="padding:4px 8px;color:var(--text)">Find files by name</td></tr>
+  <tr><td style="padding:4px 8px;color:var(--yellow)">find / -perm -4000</td><td style="padding:4px 8px;color:var(--text)">Find SUID binaries</td></tr>
+  <tr><td style="padding:4px 8px;color:var(--yellow)">find / -perm 777</td><td style="padding:4px 8px;color:var(--text)">World-writable files</td></tr>
+  <tr><td style="padding:4px 8px;color:var(--yellow)">grep "pattern" file</td><td style="padding:4px 8px;color:var(--text)">Search in file</td></tr>
+  <tr><td style="padding:4px 8px;color:var(--yellow)">grep -r "pattern" /dir</td><td style="padding:4px 8px;color:var(--text)">Recursive search</td></tr>
+  <tr><td style="padding:4px 8px;color:var(--yellow)">cat file | grep FLAG</td><td style="padding:4px 8px;color:var(--text)">Pipe to grep</td></tr>
+  <tr><td style="padding:4px 8px;color:var(--yellow)">base64 -d file</td><td style="padding:4px 8px;color:var(--text)">Decode base64</td></tr>
+  <tr><td style="padding:4px 8px;color:var(--yellow)">rev file</td><td style="padding:4px 8px;color:var(--text)">Reverse a string</td></tr>
+  <tr><td style="padding:4px 8px;color:var(--yellow)">cat f | tr a-zA-Z n-za-mN-ZA-M</td><td style="padding:4px 8px;color:var(--text)">ROT13 decode</td></tr>
+  <tr><td style="padding:4px 8px;color:var(--yellow)">awk -F, '$2=="X"{print $6}' file</td><td style="padding:4px 8px;color:var(--text)">Extract CSV field</td></tr>
+  <tr><td style="padding:4px 8px;color:var(--yellow)">tail -n 5 file</td><td style="padding:4px 8px;color:var(--text)">Last 5 lines of file</td></tr>
+  <tr><td style="padding:4px 8px;color:var(--yellow)">cat /etc/crontab</td><td style="padding:4px 8px;color:var(--text)">Check scheduled jobs</td></tr>
+  <tr><td style="padding:4px 8px;color:var(--yellow)">cat ~/.bashrc</td><td style="padding:4px 8px;color:var(--text)">Check env variables</td></tr>
+  <tr><td style="padding:4px 8px;color:var(--yellow)">strings file</td><td style="padding:4px 8px;color:var(--text)">Extract text from binary</td></tr>
+  </table>`);
+}
+
+function confirmReset(){
+  if(confirm('Reset all progress? This cannot be undone.')){
+    localStorage.removeItem('kl30_found');
+    localStorage.removeItem('kl30_score');
+    localStorage.removeItem('kl30_start');
+    found=[]; score=0; startTime=Date.now();
+    localStorage.setItem('kl30_start',startTime);
+    updateScoreUI(); renderFlagList();
+    showToast('Progress reset.',true);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  TIMER
+// ══════════════════════════════════════════════════════
+function updateTimer(){
+  const el=document.getElementById('timer-display');
+  const elapsed=Math.floor((Date.now()-startTime)/1000);
+  const h=Math.floor(elapsed/3600), m=Math.floor((elapsed%3600)/60), s=elapsed%60;
+  el.textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+setInterval(updateTimer,1000);
+
+// ══════════════════════════════════════════════════════
+//  PROMPT
+// ══════════════════════════════════════════════════════
+function prompt_str(){ const d=cwd==='/root'?'~':cwd; return `root@kali:${d}#`; }
+function updatePromptLabel(){
+  const d=cwd==='/root'?'~':cwd;
+  document.getElementById('term-prompt-label').textContent=`root@kali:${d}# `;
+  document.getElementById('term-title-label').textContent=`root@kali: ${d}`;
+}
+
+// ══════════════════════════════════════════════════════
+//  INPUT
+// ══════════════════════════════════════════════════════
+const ti=document.getElementById('term-input');
+ti.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ const v=ti.value; ti.value=''; run(v); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); if(histIdx<cmdHist.length-1){ histIdx++; ti.value=cmdHist[histIdx]; } }
+  else if(e.key==='ArrowDown'){ e.preventDefault(); if(histIdx>0){ histIdx--; ti.value=cmdHist[histIdx]; } else{ histIdx=-1; ti.value=''; } }
+  else if(e.key==='Tab'){
+    e.preventDefault();
+    const parts=ti.value.split(' '), last=parts[parts.length-1];
+    if(!last) return;
+    const dir=last.includes('/')?resolve(last.substring(0,last.lastIndexOf('/')+1)):cwd;
+    const n=FS[dir]; if(!n?.children) return;
+    const prefix=last.split('/').pop();
+    const m=n.children.filter(c=>c.startsWith(prefix));
+    if(m.length===1){ parts[parts.length-1]=(last.includes('/')?last.substring(0,last.lastIndexOf('/')+1):'')+m[0]; ti.value=parts.join(' '); }
+    else if(m.length>1) pr(`<span class="to">${m.join('  ')}</span>`);
+  }
+});
+document.getElementById('term-wrap').addEventListener('click',()=>ti.focus());
+
+// ══════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════
+renderFlagList();
+updateScoreUI();
+updateTimer();
+ti.focus();
+
+pr(`<span class="tmut">  ██╗  ██╗ █████╗ ██╗      ██╗
+  ██║ ██╔╝██╔══██╗██║      ██║
+  █████╔╝ ███████║██║      ██║
+  ██╔═██╗ ██╔══██║██║      ██║
+  ██║  ██╗██║  ██║███████╗ ██║
+  ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝ ╚═╝</span>
+<span class="tok">KaliLab CTF v2.0  —  30 Flags Hidden</span>
+<span class="to">Root shell on kali. Explore the filesystem and find all 30 flags.</span>
+<span class="tyel">Flags auto-detect when displayed. Or submit manually in the bar above.</span>
+<span class="tmut">Type <span style="color:var(--green)">help</span> for commands. Click any flag in the sidebar for a hint.</span>
+<span class="tmut">──────────────────────────────────────────────</span>`);
+</script>
+</body>
+</html>
