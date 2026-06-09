@@ -1010,7 +1010,8 @@ html,body{height:100%;background:var(--ink);color:var(--body);font-family:var(--
     </div>
     <div class="m-actions">
       <button class="mbtn mbtn-ghost" onclick="closeModal()">Close</button>
-      <button class="mbtn mbtn-orange" onclick="openLab()">Open in Lab →</button>
+      <button class="mbtn mbtn-orange" id="m-open-lab-btn" onclick="openLab()">Open in Lab →</button>
+      <span id="m-spectate-msg" style="color:var(--wire2); font-family:var(--ui); font-size:.82rem; display:none;"></span>
     </div>
   </div>
 </div>
@@ -1376,6 +1377,15 @@ FS['/usr/bin'].children.push('FLAG{su1d_b1n4ry_f0und}');
 FS['/var/log/latest_evidence.log'] = { type:'file', content:'[CRITICAL] Anomaly detected at 23:59:59\nFLAG{n3w3st_f1l3_w1ns}\nAction required.' };
 FS['/var/log'].children.push('latest_evidence.log');
 
+// Serialized initial state of the virtual filesystem
+const DEFAULT_FS_JSON = JSON.stringify(FS);
+
+function resetFS() {
+  const defaultFS = JSON.parse(DEFAULT_FS_JSON);
+  Object.keys(FS).forEach(k => delete FS[k]);
+  Object.assign(FS, defaultFS);
+}
+
 // ══════════════════════════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════════════════════════
@@ -1421,33 +1431,6 @@ const CTFDatabase = {
           score: 0,
           found: [],
           lastActive: 'now'
-        };
-      }
-    });
-
-    // Scoreboard operators
-    const fakePlayers = [
-      { user: 'Ghost_0x41', pass: 'ghostpass', role: 'player', is_on_special: false, tag: 'Elite Operator', score: 5500, foundCount: 28 },
-      { user: 'n0x3r', pass: 'noxerpass', role: 'player', is_on_special: false, tag: 'Red Team Lead', score: 4775, foundCount: 23 },
-      { user: 'cipher7', pass: 'cipherpass', role: 'player', is_on_special: false, tag: 'CTF Veteran', score: 4050, foundCount: 19 },
-      { user: 'phantom_ph', pass: 'phantompass', role: 'player', is_on_special: false, tag: 'Recon Specialist', score: 3150, foundCount: 14 },
-      { user: 'kali_hunter', pass: 'kalipass', role: 'player', is_on_special: false, tag: 'Beginner', score: 2175, foundCount: 9 },
-      { user: 'sec_noob', pass: 'noobpass', role: 'player', is_on_special: false, tag: 'Learning', score: 200, foundCount: 3 }
-    ];
-
-    fakePlayers.forEach(p => {
-      if (!stored.users[p.user]) {
-        const resolvedFlags = this.resolveFlagsForPlayer(p.foundCount, p.score);
-        stored.users[p.user] = {
-          user: p.user,
-          pass: p.pass,
-          role: p.role,
-          is_on_special: p.is_on_special,
-          tag: p.tag,
-          score: p.score,
-          found: resolvedFlags,
-          startTime: Date.now() - (3600 * 1000 * (Math.random() * 4 + 1)),
-          lastActive: (Math.floor(Math.random() * 59) + 1) + 'm ago'
         };
       }
     });
@@ -1601,16 +1584,28 @@ function doLogin(){
   score = match.score || 0;
   startTime = match.startTime || Date.now();
   match.startTime = startTime;
+  
+  // Restore virtual filesystem and current working directory
+  cwd = match.cwd || '/home/operator';
+  if (match.fsState) {
+    Object.keys(FS).forEach(k => delete FS[k]);
+    Object.assign(FS, match.fsState);
+  } else {
+    resetFS();
+  }
+  
   CTFDatabase.saveUser(match);
   document.getElementById('topnav').style.display='flex';
   
   let roleTag = '';
+  const isAdmin = (match.role==='admin' || match.role==='super_admin');
   if(match.role==='admin') roleTag = ' [ADMIN]';
   else if(match.role==='super_admin') roleTag = ' [SUPER ADMIN]';
   
   document.getElementById('nav-username').textContent=u+roleTag;
   document.getElementById('nav-avatar').textContent=u[0].toUpperCase();
-  if(match.role==='admin' || match.role==='super_admin') document.getElementById('nav-admin').style.display='flex';
+  document.getElementById('nav-admin').style.display = isAdmin ? 'flex' : 'none';
+  document.getElementById('nav-lab').style.display = isAdmin ? 'none' : 'flex';
   updateNavScore();
   goPage('dash');
   startTimer();
@@ -1663,6 +1658,8 @@ function doLogout(){
   if(!confirm('End session and logout?')) return;
   saveProgress();
   currentUser=null; found=[]; score=0; startTime=null;
+  cwd = '/home/operator';
+  resetFS();
   document.getElementById('topnav').style.display='none';
   document.getElementById('nav-admin').style.display='none';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1680,6 +1677,19 @@ let viewedProfileUser = null;
 function goPage(name, profileUser){
   if(!currentUser&&name!=='login') return;
   if(name==='admin'&&currentUser?.role!=='admin'&&currentUser?.role!=='super_admin') { alert('Admin access denied'); return; }
+  
+  if(name==='lab'){
+    if(currentUser?.role==='admin'||currentUser?.role==='super_admin') {
+      alert('Admins cannot access the Terminal Lab.');
+      return;
+    }
+    const c = CHALLENGES.find(x=>x.id===activeChalId);
+    if(c && found.includes(c.id)){
+      alert('This lab is already completed. You cannot carry it out twice.');
+      return;
+    }
+  }
+
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.navlink').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
@@ -1813,15 +1823,49 @@ function openChallenge(id){
   document.getElementById('m-title').textContent=c.name;
   document.getElementById('m-desc').textContent=c.desc;
   document.getElementById('m-hint').textContent=c.hint;
+  
+  const isSolved = found.includes(id);
+  const isAdmin = (currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin'));
+  
+  const labBtn = document.getElementById('m-open-lab-btn');
+  const specMsg = document.getElementById('m-spectate-msg');
+  
+  if (isAdmin) {
+    if (labBtn) labBtn.style.display = 'none';
+    if (specMsg) {
+      specMsg.style.display = 'inline-block';
+      specMsg.style.color = 'var(--wire2)';
+      specMsg.textContent = 'Administrators are spectators only';
+    }
+  } else if (isSolved) {
+    if (labBtn) labBtn.style.display = 'none';
+    if (specMsg) {
+      specMsg.style.display = 'inline-block';
+      specMsg.style.color = 'var(--green)';
+      specMsg.textContent = 'Lab completed. You cannot carry it out twice.';
+    }
+  } else {
+    if (labBtn) labBtn.style.display = 'inline-block';
+    if (specMsg) specMsg.style.display = 'none';
+  }
+  
   document.getElementById('modal').classList.add('open');
 }
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
 function openLab(){
+  if (currentUser?.role === 'admin' || currentUser?.role === 'super_admin') {
+    alert('Admins cannot access the Terminal Lab.');
+    return;
+  }
+  const c = CHALLENGES.find(x=>x.id===modalChalId);
+  if (c && found.includes(c.id)) {
+    alert('This lab is already completed. You cannot carry it out twice.');
+    return;
+  }
   closeModal();
   activeChalId = modalChalId;
-  const c = CHALLENGES.find(x=>x.id===activeChalId);
   if(c) document.getElementById('active-chal-name').textContent=c.name;
-  const hint=CHALLENGES.find(x=>x.id===activeChalId)?.hint||'';
+  const hint=c?.hint||'';
   const hb=document.getElementById('term-hint-bar');
   hb.textContent='Intel: '+hint; hb.style.display='block';
   renderLabFlags();
@@ -1832,6 +1876,7 @@ function openLab(){
 //  FLAG AWARD
 // ══════════════════════════════════════════════════════════════
 function awardFlag(chalId){
+  if(!currentUser || currentUser.role==='admin' || currentUser.role==='super_admin') return;
   const c=CHALLENGES.find(x=>x.id===chalId);
   if(!c||found.includes(chalId)) return;
   found.push(chalId);
@@ -1847,6 +1892,8 @@ function awardFlag(chalId){
 }
 
 function checkFlag(val){
+  if(!currentUser) return false;
+  if(currentUser.role==='admin' || currentUser.role==='super_admin') return 'admin_spectator';
   const v=val.trim();
   const c=CHALLENGES.find(x=>x.flag===v);
   if(!c) return false;
@@ -2171,6 +2218,8 @@ function superResetDatabase() {
   if (!match) {
     alert("Database reset. Your temporary user was deleted. Logging out.");
     currentUser = null; found = []; score = 0; startTime = null;
+    cwd = '/home/operator';
+    resetFS();
     document.getElementById('topnav').style.display='none';
     document.getElementById('nav-admin').style.display='none';
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -2180,6 +2229,13 @@ function superResetDatabase() {
     found = match.found || [];
     score = match.score || 0;
     startTime = match.startTime || Date.now();
+    cwd = match.cwd || '/home/operator';
+    if (match.fsState) {
+      Object.keys(FS).forEach(k => delete FS[k]);
+      Object.assign(FS, match.fsState);
+    } else {
+      resetFS();
+    }
     renderAdmin();
     toast("Database reset to factory defaults.", "green");
   }
@@ -2236,6 +2292,13 @@ function superImportDatabase(event) {
           found = match.found || [];
           score = match.score || 0;
           startTime = match.startTime || Date.now();
+          cwd = match.cwd || '/home/operator';
+          if (match.fsState) {
+            Object.keys(FS).forEach(k => delete FS[k]);
+            Object.assign(FS, match.fsState);
+          } else {
+            resetFS();
+          }
         }
       }
       
@@ -2388,6 +2451,7 @@ function runCmd(raw){
   }
   autoDetect();
   updatePs1();
+  saveProgress();
 }
 
 // ── Individual commands ───────────────────────────────────
@@ -2806,9 +2870,12 @@ document.getElementById('lab-terminal').addEventListener('click',()=>ti.focus())
 // ══════════════════════════════════════════════════════════════
 function saveProgress(){
   if(!currentUser) return;
-  const u=currentUser.user;
-  localStorage.setItem('opsec_found_'+u,JSON.stringify(found));
-  localStorage.setItem('opsec_score_'+u,score);
+  if(currentUser.role === 'admin' || currentUser.role === 'super_admin') return;
+  currentUser.found = found;
+  currentUser.score = score;
+  currentUser.cwd = cwd;
+  currentUser.fsState = JSON.parse(JSON.stringify(FS));
+  CTFDatabase.saveUser(currentUser);
 }
 function updateNavScore(){
   document.getElementById('nav-score-badge').textContent=score+' pts';
