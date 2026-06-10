@@ -1,0 +1,17 @@
+{
+  "name": "deebug-ctf",
+  "version": "3.1.0",
+  "description": "Secure backend for Deebug CTF Platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "sqlite3": "^5.1.7",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6"
+  }
+}

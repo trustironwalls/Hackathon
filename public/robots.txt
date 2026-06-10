@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /admin
+Disallow: /api/v1/debug
+# FLAG{r0b0ts_txt_3xp0s3d}
+# Default credentials for backup operator: operator / letmein
